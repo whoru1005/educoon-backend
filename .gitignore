@@ -35,3 +35,14 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### log files ###
+*.log
+
+### temp files ###
+*.tmp
+
+### secret files ###
+application-secret.yml
+application-oauth.yml
+application-gemini.yml
