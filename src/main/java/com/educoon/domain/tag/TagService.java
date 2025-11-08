@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Nodes.collect;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -22,17 +20,6 @@ public class TagService {
 
     private final TagRepository tagRepository;
     private final DepartmentRepository departmentRepository;
-
-
-    /**
-     * 모든 학과학부 목록 조회
-     */
-    @Transactional(readOnly = true)
-    public List<DepartmentResponse> getAllDepartments(){
-        return departmentRepository.findAll().stream()
-                .map(DepartmentResponse::new)
-                .collect(Collectors.toList());
-    }
 
     /**
      * 사용자가 입력한 새 태그를 생성

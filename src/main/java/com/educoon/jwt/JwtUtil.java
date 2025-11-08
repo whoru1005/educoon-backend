@@ -38,9 +38,6 @@ public class JwtUtil { // 사용자님의 클래스명
 
     // application-secret.yml 에 정의된 jwt.secret.key 값을 가져옴
     public JwtUtil(@Value("${jwt.secret.key}") String secretKey) {
-        // [!!] 핵심 수정:
-        // Base64 디코딩(Decoders.BASE64.decode) 대신,
-        // 문자열의 UTF-8 바이트를 그대로 키로 사용합니다.
         byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
@@ -113,7 +110,6 @@ public class JwtUtil { // 사용자님의 클래스명
         } catch (ExpiredJwtException e) {
             log.info("Expired JWT Token", e);
         } catch (UnsupportedJwtException e) {
-            // [!!] 여기가 현재 문제 지점입니다.
             log.info("Unsupported JWT Token", e);
         } catch (IllegalArgumentException e) {
             log.info("JWT claims string is empty.", e);
@@ -122,13 +118,10 @@ public class JwtUtil { // 사용자님의 클래스명
     }
 
     // [!!] 테스트 코드를 위한 헬퍼(Helper) 메소드 추가
-    /**
-     * (테스트용) 만료된 Access Token을 생성합니다.
-     */
     public String generateExpiredToken(String kakaoId, Collection<? extends GrantedAuthority> authorities) {
         long now = (new Date()).getTime();
         // 1. 만료 시간을 1시간 전으로 설정
-        Date expiredAccessTokenExpiresIn = new Date(now - 3600 * 1000L);
+        Date expiredAccessTokenExpiresIn = new Date(now);
 
         return Jwts.builder()
                 .setSubject(kakaoId)

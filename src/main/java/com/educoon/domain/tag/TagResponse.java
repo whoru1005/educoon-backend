@@ -15,4 +15,10 @@ public class TagResponse {
         this.tagCategory = tagCategory;
     }
 
+    public TagResponse(Tag tag) {
+        this.tagId = tag.getTagId();
+        this.name = tag.getName();
+        this.tagCategory = tag.getCategory();
+    }
+
 }
