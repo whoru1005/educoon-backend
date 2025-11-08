@@ -19,6 +19,10 @@ public enum ErrorCode {
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "G-002", "유효하지 않은 입력 값입니다.");
 
     // User (사용자)
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U-001", "해당 사용자를 찾을 수 없습니다"),
+
+//        Tag & Department
+    TAG_ALREADY_EXISTS(HttpStatus.CONFLICT, "T-002", "이미 존재하는 태그 이름입니다."),
 
 
     private final HttpStatus httpStatus; // HTTP
