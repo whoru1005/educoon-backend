@@ -38,12 +38,15 @@ public class StudyRoom {
     private String description;
 
     @Column(nullable = false)
+    private Integer currentMembers;
+
+    @Column(nullable = false)
     @Builder.Default
     private Integer maxCapacity = 10;
 
     @Column(nullable = false)
     @Builder.Default
-    private Boolean isPersonal = false;
+    private Boolean isPublic = false;
 
     @Column(length = 255)
     private String password;

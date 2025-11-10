@@ -1,0 +1,41 @@
+package com.educoon.domain.studyRoom;
+
+import com.educoon.security.SecurityUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/studyrooms")
+public class StudyRoomController {
+
+    private final StudyRoomService studyRoomService;
+
+    @GetMapping
+    public ResponseEntity<Page<StudyRoomSummaryResponse>> getAllStudyRooms(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        Page<StudyRoomSummaryResponse> roomPage = studyRoomService.getAllStudyRooms(pageable);
+
+        return ResponseEntity.ok(roomPage);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<List<StudyRoomSummaryResponse>> getMyStudyRooms(){
+        String currentKakaoId = SecurityUtils.getCurrentUserKakaoId();
+
+        List<StudyRoomSummaryResponse> myRooms = studyRoomService.getMyStudyRooms(currentKakaoId);
+
+        return ResponseEntity.ok(myRooms);
+
+    }
+}
