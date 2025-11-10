@@ -7,9 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -20,13 +18,21 @@ public class StudyRoomController {
 
     private final StudyRoomService studyRoomService;
 
-    @GetMapping
+    @GetMapping("/summaries")
     public ResponseEntity<Page<StudyRoomSummaryResponse>> getAllStudyRooms(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<StudyRoomSummaryResponse> roomPage = studyRoomService.getAllStudyRooms(pageable);
 
         return ResponseEntity.ok(roomPage);
+    }
+
+    @GetMapping("/{roomId}")
+    public ResponseEntity<StudyRoomDetailResponse> getDetailsStudyRoom(@PathVariable Long roomId){
+
+        StudyRoomDetailResponse studyRoomDetailResponse = studyRoomService.getStudyRoomDetails(roomId);
+
+        return ResponseEntity.ok(studyRoomDetailResponse);
     }
 
     @GetMapping("/me")
@@ -36,6 +42,16 @@ public class StudyRoomController {
         List<StudyRoomSummaryResponse> myRooms = studyRoomService.getMyStudyRooms(currentKakaoId);
 
         return ResponseEntity.ok(myRooms);
+    }
 
+    @GetMapping("/search")
+    public ResponseEntity<Page<StudyRoomSummaryResponse>> searchStudyRooms(
+            @RequestParam("title") String title,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)Pageable pageable){
+
+        Page<StudyRoomSummaryResponse> searchResultPage =
+            studyRoomService.searchStudyRoomsBytitle(title, pageable);
+
+        return ResponseEntity.ok(searchResultPage);
     }
 }

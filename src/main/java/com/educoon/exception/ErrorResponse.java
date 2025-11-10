@@ -36,6 +36,5 @@ public class ErrorResponse {
                         .message(errorCode.getMessage())
                         .build()
                 );
-
     }
 }

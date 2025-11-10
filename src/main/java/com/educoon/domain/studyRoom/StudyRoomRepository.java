@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
 
@@ -33,4 +34,15 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
             "LEFT JOIN FETCH rtm.tag " +
             "WHERE u.kakaoId = :kakaoId")
     List<StudyRoom> findMyStudyRoomsByKakaoId(@Param("kakaoId") String kakaoId);
+
+    @Query("SELECT DISTINCT sr FROM StudyRoom sr " +
+            "JOIN sr.participants rp " +
+            "JOIN rp.user u " +
+            "LEFT JOIN FETCH sr.roomTagMaps rtm " +
+            "LEFT JOIN FETCH rtm.tag " +
+            "WHERE sr.roomId = :roomId")
+    Optional<StudyRoom> findRoomDetailsById(@Param("roomId") Long roomId);
+
+    @EntityGraph(attributePaths = {"roomTagMaps", "roomTagMaps.tag"})
+    Page<StudyRoom> findByTitleContaining(String title, Pageable pageable);
 }

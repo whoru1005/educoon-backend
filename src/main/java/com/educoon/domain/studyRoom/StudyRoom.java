@@ -38,9 +38,6 @@ public class StudyRoom {
     private String description;
 
     @Column(nullable = false)
-    private Integer currentMembers;
-
-    @Column(nullable = false)
     @Builder.Default
     private Integer maxCapacity = 10;
 

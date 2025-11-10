@@ -4,27 +4,34 @@ import com.educoon.domain.tag.TagSummaryResponse;
 import lombok.Getter;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
-public class StudyRoomSummaryResponse {
+public class StudyRoomDetailResponse {
 
     private final Long roomId;
+
     private final String title;
-    private final boolean isPublic;
+
+    private final String description;
+
     private final int currentMembers;
+
     private final int maxCapacity;
+
+    private final boolean isPublic;
+
     private final List<TagSummaryResponse> tags;
 
-    public StudyRoomSummaryResponse(StudyRoom studyRoom){
+    public StudyRoomDetailResponse(StudyRoom studyRoom){
         this.roomId = studyRoom.getRoomId();
         this.title = studyRoom.getTitle();
-        this.isPublic = studyRoom.getIsPublic();
+        this.description = studyRoom.getDescription();
         this.currentMembers = studyRoom.getParticipants().size();
         this.maxCapacity = studyRoom.getMaxCapacity();
+        this.isPublic = studyRoom.getIsPublic();
 
         this.tags = studyRoom.getRoomTagMaps().stream()
                 .map(roomTagMap -> new TagSummaryResponse(roomTagMap.getTag()))
-                .collect(Collectors.toList());
+                .toList();
     }
 }
