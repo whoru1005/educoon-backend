@@ -4,6 +4,7 @@ import com.educoon.domain.chatMessage.ChatMessage;
 import com.educoon.domain.roomParticipant.RoomParticipant;
 import com.educoon.domain.roomTagMap.RoomTagMap;
 import com.educoon.domain.studyRecord.StudyRecord;
+import com.educoon.domain.tag.Tag;
 import com.educoon.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -66,4 +67,24 @@ public class StudyRoom {
     @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<RoomTagMap> roomTagMaps = new ArrayList<>();
+
+    public void addParticipant(User user){
+        RoomParticipant participant = RoomParticipant.builder()
+                .user(user)
+                .studyRoom(this)
+                .build();
+
+        this.participants.add(participant);
+        user.getRoomParticipants().add(participant);
+    }
+
+    public void addTag(Tag tag){
+        RoomTagMap roomTagMap = RoomTagMap.builder()
+                .tag(tag)
+                .studyRoom(this)
+                .build();
+
+        this.roomTagMaps.add(roomTagMap);
+        tag.getRoomTagMaps().add(roomTagMap);
+    }
 }

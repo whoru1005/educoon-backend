@@ -21,7 +21,14 @@ public enum ErrorCode {
     // User (사용자)
 
     // StudyRoom
-    ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "S-001", "해당 스터디룸이 존재하지 않습니다");
+    ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "S-001", "해당 스터디룸이 존재하지 않습니다"),
+
+    // 태그
+    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "T-001", "해당 태그가 존재하지 않습니다"),
+
+    // 학과
+    DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D-001", "해당 학과가 존재하지 않습니다");
+
 
 
     private final HttpStatus httpStatus; // HTTP
