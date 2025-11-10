@@ -8,7 +8,7 @@ import lombok.Getter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class KakaoUserInfoResponse {
 
-    private String kakaoId;
+    private String id;
 
     private KakaoProperties properties;
 

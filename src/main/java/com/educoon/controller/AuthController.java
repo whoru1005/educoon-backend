@@ -1,5 +1,6 @@
 package com.educoon.controller;
 
+import com.educoon.domain.token.TokenReissueRequest;
 import com.educoon.jwt.JwtTokenInfo;
 import com.educoon.oauth.AuthService;
 import com.educoon.oauth.KakaoLoginRequest;
@@ -36,5 +37,16 @@ public class AuthController {
         log.info("로그인 성공. JWT: {}", jwtTokenInfo.getAccessToken());
 
         return ResponseEntity.ok(jwtTokenInfo);
+    }
+
+    @PostMapping("/reissue")
+    public ResponseEntity<JwtTokenInfo> reissueToken(@Valid @RequestBody TokenReissueRequest request){
+        log.info("토큰 재발급 요청. Refresh Token: {}...", request.getRefreshToken().substring(0, 10));
+
+        JwtTokenInfo newJwtTokenInfo = authService.reissueToken(request.getRefreshToken());
+
+        log.info("토큰 재발급 성공. New Access Token: {}", newJwtTokenInfo.getAccessToken());
+
+        return ResponseEntity.ok(newJwtTokenInfo);
     }
 }

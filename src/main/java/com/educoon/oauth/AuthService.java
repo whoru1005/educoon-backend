@@ -1,7 +1,11 @@
 package com.educoon.oauth;
 
+import com.educoon.domain.token.RefreshRepository;
+import com.educoon.domain.token.RefreshToken;
 import com.educoon.domain.user.User;
 import com.educoon.domain.user.UserRepository;
+import com.educoon.exception.CustomException;
+import com.educoon.exception.ErrorCode;
 import com.educoon.jwt.JwtTokenInfo;
 import com.educoon.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +26,7 @@ import java.util.Collections;
 public class AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final RefreshRepository refreshRepository;
     private final WebClient.Builder webClientBuilder;
     private final String KAKAO_USER_INFO_URI;
 
@@ -30,10 +35,12 @@ public class AuthService {
 
     public AuthService(UserRepository userRepository,
                        JwtUtil jwtUtil,
+                       RefreshRepository refreshRepository,
                        WebClient.Builder webClientBuilder,
                        @Value("${spring.security.oauth2.client.provider.kakao.user-info-uri}") String KAKAO_USER_INFO_URI) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
+        this.refreshRepository = refreshRepository;
         this.webClientBuilder = webClientBuilder;
         this.KAKAO_USER_INFO_URI = KAKAO_USER_INFO_URI;
 
@@ -49,16 +56,65 @@ public class AuthService {
 
 //        1. 카카오 API를 호출해 사용자 정보를 가져옴
         KakaoUserInfoResponse userInfoResponse = getKakaoUserInfo(kakaoAccessToken);
-
-        log.debug("카카오 사용자 정보: kakaoId={}, nickname={}", userInfoResponse.getKakaoId(), userInfoResponse.getNickname());
+        log.debug("카카오 사용자 정보: kakaoId={}, nickname={}", userInfoResponse.getId(), userInfoResponse.getNickname());
 
 //        2.카카오 ID 기반으로 사용자를 조회하거나, 없으면 새로 생성
         User user = findOrCreateUser(userInfoResponse);
 
 //        3.JWT 발급
         Collection<GrantedAuthority> authorities = Collections.singleton(new SimpleGrantedAuthority(USER_ROLE));
+        JwtTokenInfo jwtTokenInfo = jwtUtil.generateTokenInfo(user.getKakaoId(), authorities);
+
+        log.debug("Refresg Token 저장/갱신 시작. userId: {}", user.getUserId());
+        refreshRepository.findByUser(user)
+                .ifPresentOrElse(
+                        (refreshToken) -> {
+                            log.debug("기존 Refresh Token 갱신. userId: {}", user.getUserId());
+                            refreshToken.updateToken(jwtTokenInfo.getRefreshToken());
+                        },
+                        () ->{
+                            log.debug("신규 Refresh Token 저장, userId: {}", user.getUserId());
+                            RefreshToken newRefreshToken = RefreshToken.builder()
+                                    .user(user)
+                                    .tokenValue(jwtTokenInfo.getRefreshToken())
+                                    .build();
+                            refreshRepository.save(newRefreshToken);
+                        }
+                );
 
         return jwtUtil.generateTokenInfo(user.getKakaoId(), authorities);
+    }
+
+    @Transactional
+    public JwtTokenInfo reissueToken(String refreshTokenValue){
+        if(!jwtUtil.validateToken(refreshTokenValue)){
+            log.warn("유효하지 않은 Refresh Token: {}", refreshTokenValue);
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        String kakaoId = jwtUtil.getKakaoIdFromToken(refreshTokenValue);
+
+        RefreshToken dbRefreshToken = refreshRepository.findByTokenValue(refreshTokenValue)
+                .orElseThrow(() ->{
+                    log.warn("DB에 존재하지 않는 Refresh Token: {}", refreshTokenValue);
+                    return new CustomException(ErrorCode.NOT_FOUND_REFRESH_TOKEN);
+                });
+
+        if(!dbRefreshToken.getUser().getKakaoId().equals(kakaoId)){
+            log.error("토큰 소유자가 불일치합니다. DB: {}, Token:{}",
+                    dbRefreshToken.getUser().getKakaoId(), kakaoId);
+
+            throw new CustomException(ErrorCode.MISMATCH_TOKEN_USER);
+        }
+
+        User user = dbRefreshToken.getUser();
+        Collection<GrantedAuthority> authorities = Collections.singleton(new SimpleGrantedAuthority(USER_ROLE));
+        JwtTokenInfo newJwtTokenInfo = jwtUtil.generateTokenInfo(user.getKakaoId(), authorities);
+
+        log.debug("토큰 재발급 - DB Refresh Token 갱신. userId: {}", user.getUserId());
+        dbRefreshToken.updateToken(newJwtTokenInfo.getRefreshToken());
+
+        return newJwtTokenInfo;
     }
 
     /**
@@ -96,13 +152,13 @@ public class AuthService {
      * @return User
      */
     private User findOrCreateUser(KakaoUserInfoResponse userInfo){
-        return userRepository.findByKakaoId(userInfo.getKakaoId())
+        return userRepository.findByKakaoId(userInfo.getId())
                 .orElseGet(() -> {
-                    log.info("새로운 사용자 회원 가입: kakaoId = {}", userInfo.getKakaoId());
+                    log.info("새로운 사용자 회원 가입: kakaoId = {}", userInfo.getId());
 
                     User newUser = User.builder()
-                            .kakaoId(userInfo.getKakaoId())
-                            .nickname(userInfo.getKakaoId())
+                            .kakaoId(userInfo.getId())
+                            .nickname(userInfo.getNickname())
                             .profileImageUrl(userInfo.getProfileImageUrl())
                             .build();
 

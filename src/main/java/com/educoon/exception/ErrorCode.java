@@ -13,6 +13,9 @@ public enum ErrorCode {
     KAKAO_USER_INFO_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "A-002", "카카오 사용자 정보 조회에 실패했습니다."),
     INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "A-003", "유효하지 않은 JWT 토큰입니다."),
     EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "A-004", "만료된 JWT 토큰입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "A-005", "유효하지 않은 Refresh 토큰입니다"),
+    NOT_FOUND_REFRESH_TOKEN(HttpStatus.NOT_FOUND, "A-006", "해당 Refresh Token을 찾을 수 없습니다"),
+    MISMATCH_TOKEN_USER(HttpStatus.UNAUTHORIZED, "A-007", "토큰 소유자가 불일치합니다"),
 
     // General (일반)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "G-001", "서버 내부 오류가 발생했습니다."),
