@@ -23,7 +23,7 @@ public class StudyRoomController {
 
     @GetMapping("/summaries")
     public ResponseEntity<Page<StudyRoomSummaryResponse>> getAllStudyRooms(
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 30, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Page<StudyRoomSummaryResponse> roomPage = studyRoomService.getAllStudyRooms(pageable);
 
@@ -50,7 +50,7 @@ public class StudyRoomController {
     @GetMapping("/search")
     public ResponseEntity<Page<StudyRoomSummaryResponse>> searchStudyRooms(
             @RequestParam("title") String title,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)Pageable pageable){
+            @PageableDefault(size = 30, sort = "createdAt", direction = Sort.Direction.DESC)Pageable pageable){
 
         Page<StudyRoomSummaryResponse> searchResultPage =
             studyRoomService.searchStudyRoomsBytitle(title, pageable);
