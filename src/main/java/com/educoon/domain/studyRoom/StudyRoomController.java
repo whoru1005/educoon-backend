@@ -1,6 +1,8 @@
 package com.educoon.domain.studyRoom;
 
+import com.educoon.domain.roomParticipant.RoomParticipantResponse;
 import com.educoon.security.SecurityUtils;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -65,5 +67,26 @@ public class StudyRoomController {
         StudyRoomDetailResponse createdRoom = studyRoomService.createStudyRoom(studyRoomCreateRequest, currentUserKakaoId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRoom);
+    }
+
+    @GetMapping("/{roomId}/participants")
+    public ResponseEntity<List<RoomParticipantResponse>> getParticipants(@PathVariable Long roomId){
+
+        List<RoomParticipantResponse> participantResponses = studyRoomService.getRoomParticipants(roomId);
+
+        return ResponseEntity.ok(participantResponses);
+    }
+
+    @PutMapping("/{roomId}")
+    public ResponseEntity<StudyRoomDetailResponse> updateRoom(
+            @PathVariable Long roomId,
+            @Valid @RequestBody StudyRoomUpdateRequest studyRoomUpdateRequest){
+
+        String userKakaoId = SecurityUtils.getCurrentUserKakaoId();
+
+        StudyRoomDetailResponse updatedRoom = studyRoomService.updateRoom(roomId, studyRoomUpdateRequest,userKakaoId);
+
+        return ResponseEntity.ok(updatedRoom);
+
     }
 }

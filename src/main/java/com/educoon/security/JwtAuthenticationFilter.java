@@ -37,7 +37,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String jwt = resolveToken(request);
 
 //        2.jwtUtil로 토큰 검증
-//        토큰이 유효하면 SecurityContest에 인증 정보 저장
+//        토큰이 유효하면 SecurityContext에 인증 정보 저장
         if(StringUtils.hasText(jwt) && jwtUtil.validateToken(jwt)){
             Authentication authentication = jwtUtil.getAuthentication(jwt);
 

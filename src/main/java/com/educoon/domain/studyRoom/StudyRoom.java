@@ -87,4 +87,26 @@ public class StudyRoom {
         this.roomTagMaps.add(roomTagMap);
         tag.getRoomTagMaps().add(roomTagMap);
     }
+
+    public void updateDetails(String title, String password, Integer maxCapacity, String description){
+        this.title = title;
+        this.password = (password != null && !password.isEmpty()) ? password : null;
+        this.maxCapacity = maxCapacity;
+        this.description = description;
+        this.isPublic = password != null && !password.isEmpty();
+    }
+
+    public void updateTags(List<Tag> newTags){
+        this.roomTagMaps.clear();
+
+        if(newTags != null){
+            newTags.forEach(tag ->{
+                RoomTagMap newMap = RoomTagMap.builder()
+                        .studyRoom(this)
+                        .tag(tag)
+                        .build();
+                this.roomTagMaps.add(newMap);
+            });
+        }
+    }
 }

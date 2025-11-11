@@ -14,6 +14,8 @@ public class KakaoUserInfoResponse {
 
     private KakaoAccount kakaoAccount;
 
+    private KakaoProfile kakaoProfile;
+
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class KakaoProperties {

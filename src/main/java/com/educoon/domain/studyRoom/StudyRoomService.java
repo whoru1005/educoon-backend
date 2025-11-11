@@ -1,5 +1,8 @@
 package com.educoon.domain.studyRoom;
 
+import com.educoon.domain.roomParticipant.RoomParticipant;
+import com.educoon.domain.roomParticipant.RoomParticipantRepository;
+import com.educoon.domain.roomParticipant.RoomParticipantResponse;
 import com.educoon.domain.tag.Tag;
 import com.educoon.domain.tag.TagRepository;
 import com.educoon.domain.user.User;
@@ -26,6 +29,7 @@ public class StudyRoomService {
     private final UserRepository userRepository;
     private final TagRepository tagRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RoomParticipantRepository roomParticipantRepository;
 
     /**
      * 모든 스터디룸 목록 조회
@@ -104,6 +108,50 @@ public class StudyRoomService {
         StudyRoom savedRoom = studyRoomRepository.save(newStudyRoom);
 
         return new StudyRoomDetailResponse(savedRoom);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoomParticipantResponse> getRoomParticipants(Long roomId){
+        StudyRoom studyRoom = studyRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        Long ownerId = studyRoom.getOwner().getUserId();
+
+        List<RoomParticipant> participants = roomParticipantRepository.findAllWithUserByRoomId(roomId);
+
+        return participants.stream()
+                .map(rp -> new RoomParticipantResponse(
+                        rp.getUser(),
+                        rp.getUser().getUserId().equals(ownerId)
+                ))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public StudyRoomDetailResponse updateRoom(Long roomId, StudyRoomUpdateRequest studyRoomUpdateRequest, String userKakaoId){
+        User user = userRepository.findByKakaoId(userKakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+
+        StudyRoom studyRoom = studyRoomRepository.findByIdWithTags(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+
+        if(!studyRoom.getOwner().getUserId().equals(user.getUserId())){
+            throw new CustomException(ErrorCode.FORBIDDEN_ACTION);
+        }
+
+        studyRoom.updateDetails(
+                studyRoomUpdateRequest.getTitle(),
+                passwordEncoder.encode(studyRoomUpdateRequest.getPassword()),
+                studyRoomUpdateRequest.getMaxCapacity(),
+                studyRoomUpdateRequest.getDescription()
+        );
+
+        List<Tag> newTags = tagRepository.findAllById(studyRoomUpdateRequest.getTagIds());
+        studyRoom.updateTags(newTags);
+
+        return new StudyRoomDetailResponse(studyRoom);
     }
 
 }

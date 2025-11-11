@@ -1,5 +1,6 @@
 package com.educoon.domain.studyRoom;
 
+import com.educoon.domain.tag.TagResponse;
 import com.educoon.domain.tag.TagSummaryResponse;
 import lombok.Getter;
 
@@ -20,7 +21,7 @@ public class StudyRoomDetailResponse {
 
     private final boolean isPublic;
 
-    private final List<TagSummaryResponse> tags;
+    private final List<TagResponse> tags;
 
     public StudyRoomDetailResponse(StudyRoom studyRoom){
         this.roomId = studyRoom.getRoomId();
@@ -31,7 +32,7 @@ public class StudyRoomDetailResponse {
         this.isPublic = studyRoom.getIsPublic();
 
         this.tags = studyRoom.getRoomTagMaps().stream()
-                .map(roomTagMap -> new TagSummaryResponse(roomTagMap.getTag()))
+                .map(roomTagMap -> new TagResponse(roomTagMap.getTag()))
                 .toList();
     }
 }

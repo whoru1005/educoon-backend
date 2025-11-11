@@ -56,7 +56,7 @@ public class AuthService {
 
 //        1. 카카오 API를 호출해 사용자 정보를 가져옴
         KakaoUserInfoResponse userInfoResponse = getKakaoUserInfo(kakaoAccessToken);
-        log.debug("카카오 사용자 정보: kakaoId={}, nickname={}", userInfoResponse.getId(), userInfoResponse.getNickname());
+        log.debug("카카오 사용자 정보: kakaoId={}, nickname={}, profile={}", userInfoResponse.getId(), userInfoResponse.getNickname(), userInfoResponse.getKakaoProfile());
 
 //        2.카카오 ID 기반으로 사용자를 조회하거나, 없으면 새로 생성
         User user = findOrCreateUser(userInfoResponse);

@@ -45,4 +45,10 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
 
     @EntityGraph(attributePaths = {"roomTagMaps", "roomTagMaps.tag"})
     Page<StudyRoom> findByTitleContaining(String title, Pageable pageable);
+
+    @Query("SELECT sr FROM StudyRoom sr " +
+            "LEFT JOIN FETCH sr.roomTagMaps rtm " +
+            "LEFT JOIN FETCH rtm.tag t " +
+            "WHERE sr.roomId = :roomId")
+    Optional<StudyRoom> findByIdWithTags(@Param("roomId") Long roomId);
 }
