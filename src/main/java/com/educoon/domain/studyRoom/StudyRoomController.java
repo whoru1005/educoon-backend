@@ -89,4 +89,36 @@ public class StudyRoomController {
         return ResponseEntity.ok(updatedRoom);
 
     }
+
+    @PostMapping("/{roomId}/join")
+    public ResponseEntity<Void> joinRoom(
+            @PathVariable Long roomId,
+            @RequestBody(required = false) StudyRoomJoinRequest studyRoomJoinRequest){
+
+        String currentUserKakaoId = SecurityUtils.getCurrentUserKakaoId();
+
+        String password = (studyRoomJoinRequest != null) ? studyRoomJoinRequest.getPassword() : null;
+
+        studyRoomService.joinRoom(roomId, currentUserKakaoId, password);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{roomId}/leave")
+    public ResponseEntity<Void> leaveRoom(@PathVariable Long roomId){
+        String currentUserKakaoId = SecurityUtils.getCurrentUserKakaoId();
+
+        studyRoomService.leaveRoom(roomId, currentUserKakaoId);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<Void> deleteStudyRoom(@PathVariable Long roomId){
+        String currentUserKakaoId = SecurityUtils.getCurrentUserKakaoId();
+
+        studyRoomService.deleteRoom(roomId, currentUserKakaoId);
+
+        return ResponseEntity.ok().build();
+    }
 }

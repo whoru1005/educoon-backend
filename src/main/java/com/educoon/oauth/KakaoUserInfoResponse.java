@@ -12,6 +12,7 @@ public class KakaoUserInfoResponse {
 
     private KakaoProperties properties;
 
+    @JsonProperty("kakao_account")
     private KakaoAccount kakaoAccount;
 
     private KakaoProfile kakaoProfile;

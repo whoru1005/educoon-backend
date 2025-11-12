@@ -154,4 +154,69 @@ public class StudyRoomService {
         return new StudyRoomDetailResponse(studyRoom);
     }
 
+    @Transactional
+    public void joinRoom(Long roomId, String currentUserKakaoId, String password){
+
+        User user = userRepository.findByKakaoId(currentUserKakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        StudyRoom studyRoom = studyRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if(roomParticipantRepository.existsByUserAndStudyRoom(user, studyRoom)){
+            throw new CustomException(ErrorCode.ALREADY_JOINED_ROOM);
+        }
+
+        long currentMembers = roomParticipantRepository.countByStudyRoom(studyRoom);
+        if(currentMembers >= studyRoom.getMaxCapacity()){
+            throw new CustomException(ErrorCode.ROOM_IS_FULL);
+        }
+
+        if(!studyRoom.getIsPublic()){
+            if(password == null || !passwordEncoder.matches(password, studyRoom.getPassword())){
+                throw new CustomException(ErrorCode.INVALID_ROOM_PASSWORD);
+            }
+        }
+
+        RoomParticipant newParticipant = RoomParticipant.builder()
+                .user(user)
+                .studyRoom(studyRoom)
+                .build();
+
+        roomParticipantRepository.save(newParticipant);
+    }
+
+    public void leaveRoom(Long roomId, String currentUserKakaoId){
+
+        User user = userRepository.findByKakaoId(currentUserKakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        StudyRoom studyRoom = studyRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if(studyRoom.getOwner().getUserId().equals(user.getUserId())){
+            //TODO: 방장 탈퇴 로직 공부시간 조회 로직 만들면 구현
+        }
+
+        RoomParticipant participant = roomParticipantRepository.findByUserAndStudyRoom(user, studyRoom)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_PARTICIPANT));
+
+        roomParticipantRepository.delete(participant);
+    }
+
+    public void deleteRoom(Long roomId, String currentUserKakaoId){
+
+        User user = userRepository.findByKakaoId(currentUserKakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        StudyRoom studyRoom = studyRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (!studyRoom.getOwner().getUserId().equals(user.getUserId())) {
+            throw new CustomException(ErrorCode.FORBIDDEN_ACTION);
+        }
+
+        studyRoomRepository.delete(studyRoom);
+    }
+
 }
