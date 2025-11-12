@@ -27,6 +27,11 @@ public enum ErrorCode {
 
     // StudyRoom
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "S-001", "해당 스터디룸이 존재하지 않습니다"),
+    // StudyRoom (S-001 다음)
+    ROOM_IS_FULL(HttpStatus.BAD_REQUEST, "S-002", "스터디룸의 정원이 가득 찼습니다"),
+    ALREADY_JOINED_ROOM(HttpStatus.CONFLICT, "S-003", "이미 가입한 스터디룸입니다"),
+    NOT_PARTICIPANT(HttpStatus.NOT_FOUND, "S-004", "스터디룸의 가입자가 아닙니다"),
+    OWNER_CANNOT_LEAVE(HttpStatus.FORBIDDEN, "S-005", "방장은 스터디룸을 탈퇴할 수 없습니다. (삭제만 가능)"),
 
     // 태그
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "T-001", "해당 태그가 존재하지 않습니다"),
