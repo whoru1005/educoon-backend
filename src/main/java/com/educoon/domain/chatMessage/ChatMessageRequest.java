@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class ChatRequest {
+public class ChatMessageRequest {
 
     @NotEmpty
     private String message;

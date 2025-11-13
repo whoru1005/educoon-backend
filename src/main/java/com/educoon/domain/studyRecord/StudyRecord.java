@@ -37,7 +37,7 @@ public class StudyRecord {
     private LocalDateTime endTime;
 
     @Column(nullable = false)
-    private Integer duration;
+    private Long duration;
 
 
 }

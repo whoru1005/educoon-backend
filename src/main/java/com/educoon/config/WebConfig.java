@@ -13,11 +13,11 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**") // /api/.. 로 시작하는 모든 경_
-                .allowedOrigins(FLUTTER_LOCAL_HOST) // Flutter 로컬 주소만 허용
-                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // 허용할 HTTP
+        registry.addMapping("/**") // 모든 경로에 대해
+                .allowedOriginPatterns("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH") // 모든 HTTP 메서드 허용
                 .allowedHeaders("*") // 모든 헤더 허용
-                .allowCredentials(true) // 쿠키/인증 정보 허용
-                .maxAge(3600); // 1시간 동안 pre-flight
+                .allowCredentials(true) // (필요시)
+                .maxAge(3600);
     }
 }

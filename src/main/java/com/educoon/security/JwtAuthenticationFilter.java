@@ -33,6 +33,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
+        System.out.println("입장");
+        // [ 1. 수정/추가 ]
+        // /ws-stomp/** 경로는 JWT 인증 필터를 건너뛰게 합니다.
+        // (이 경로의 인증은 JwtChannelInterceptor가 담당)
+        if (request.getRequestURI().startsWith("/ws-stomp/")) {
+
+
+            filterChain.doFilter(request, response);
+            System.out.println("과연?");
+            return; // (필터를 즉시 종료하고 다음으로 넘김)
+        }
+
+
         //1. Request 헤더에서 HWT 토큰 추출
         String jwt = resolveToken(request);
 

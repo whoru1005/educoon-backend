@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"> <title>EduCoon WebSocket (STOMP) Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+<h2>EduCoon STOMP Test (JWT)</h2>
+<div>
+    <label for="jwt">JWT Token (Bearer 제외):</label>
+    <input type="text" id="jwt" style="width: 500px;" placeholder="로그인 API로 발급받은 Access Token을 붙여넣으세요">
+</div>
+<div>
+    <label for="roomId">Room ID:</label>
+    <input type="text" id="roomId" value="1">
+    <button id="connectBtn" onclick="connect()">Connect</button>
+    <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+</div>
+<hr>
+<div>
+    <label for="message">Message:</label>
+    <input type="text" id="message" placeholder="보낼 메시지 입력...">
+    <button id="sendBtn" onclick="sendMessage()" disabled>Send Chat</button>
+</div>
+<h3>Logs:</h3>
+<div id="logs" style="border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 5px;"></div>
+
+<script>
+    var stompClient = null;
+    var currentRoomId = null;
+
+    // --- 1. 웹소켓 연결 ---
+    function connect() {
+        var jwtToken = document.getElementById('jwt').value;
+        currentRoomId = document.getElementById('roomId').value;
+
+        if (!jwtToken || !currentRoomId) {
+            log("!! JWT와 Room ID를 모두 입력하세요.");
+            return;
+        }
+
+        // 1-1. STOMP 헤더에 JWT 인증 토큰 추가
+        var headers = {
+            "Authorization": "Bearer " + jwtToken
+        };
+
+        // 1-2. /ws-stomp 엔드포인트로 연결
+        var socket = new SockJS('http://localhost:8080/ws-stomp'); // (포트 확인)
+        stompClient = Stomp.over(socket);
+
+        log("Connecting to /ws-stomp...");
+
+        // 1-3. .connect(헤더, 연결성공콜백, 에러콜백)
+        stompClient.connect(headers,
+            function (frame) { // (연결 성공)
+                log("✅ CONNECTED: " + frame);
+                setConnected(true);
+
+                // 1-4. 연결 성공 시, 방 구독(SUBSCRIBE) 시작
+                subscribeToRoom();
+            },
+            function (error) { // (연A결 실패)
+                log("🔴 CONNECTION ERROR: " + error);
+                log("JWT 토큰이 만료되었거나 유효하지 않은지 확인하세요.");
+                setConnected(false);
+            }
+        );
+    }
+
+    // --- 2. 방 구독 ---
+    function subscribeToRoom() {
+        var topic = '/topic/studyrooms/' + currentRoomId;
+        log(`Subscribing to ${topic}...`);
+
+        // 2-1. /topic/rooms/{id} 구독
+        stompClient.subscribe(topic, function (message) {
+            // 2-2. 메시지 수신 시 처리
+            var chatResponse = JSON.parse(message.body);
+            var logMsg = `[${chatResponse.timestamp}] ${chatResponse.senderNickname}: ${chatResponse.content}`;
+            log(logMsg);
+        });
+    }
+
+    // --- 3. 메시지 발송 ---
+    function sendMessage() {
+        var messageContent = document.getElementById('message').value;
+        var destination = '/app/chat/studyrooms/' + currentRoomId + '/send';
+
+        if (messageContent && stompClient) {
+            var chatRequest = {
+                'content': messageContent
+            };
+
+            // 3-1. /app/... 경로로 메시지 발행(PUBLISH)
+            stompClient.send(destination,
+                {}, // (헤더 없음)
+                JSON.stringify(chatRequest) // (body에 DTO를 JSON 문자열로)
+            );
+
+            log(`-> Sent to ${destination}: ${messageContent}`);
+            document.getElementById('message').value = '';
+        }
+    }
+
+    // --- 4. 연결 해제 ---
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+        }
+        log("Disconnected.");
+        setConnected(false);
+    }
+
+    // --- 유틸리티 함수 ---
+    function setConnected(connected) {
+        document.getElementById('connectBtn').disabled = connected;
+        document.getElementById('disconnectBtn').disabled = !connected;
+        document.getElementById('sendBtn').disabled = !connected;
+    }
+
+    function log(message) {
+        var logsDiv = document.getElementById('logs');
+        logsDiv.innerHTML += `<div>${message}</div>`;
+        logsDiv.scrollTop = logsDiv.scrollHeight; // 자동 스크롤
+    }
+</script>
+</body>
+</html>
