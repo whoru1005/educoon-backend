@@ -27,7 +27,7 @@ public class ChatMessageController {
     @MessageMapping("/chat/studyrooms/{roomId}/send")
     @SendTo("/topic/studyrooms/{roomId}")
     @Transactional
-    public ChatMessageResponse sendMesssage(
+    public WebSocketMessage sendMesssage(
             @DestinationVariable Long roomId,
             @Payload ChatMessageRequest request,
             SimpMessageHeaderAccessor headerAccessor
@@ -47,16 +47,18 @@ public class ChatMessageController {
         ChatMessage newChatMessage = ChatMessage.builder()
                 .studyRoom(studyRoom)
                 .user(sender)
-                .content(request.getMessage())
+                .content(request.getContent())
                 .build();
 
         ChatMessage savedMessage = chatMessageRepository.save(newChatMessage);
 
-        return new ChatMessageResponse(
-                sender.getUserId(),
-                sender.getNickname(),
-                savedMessage.getContent(),
-                savedMessage.getTimestamp()
-        );
+        return WebSocketMessage.builder()
+                .type(MessageType.CHAT)
+                .userId(sender.getUserId())
+                .nickname(sender.getNickname())
+                .profileImageUrl(sender.getProfileImageUrl())
+                .content(savedMessage.getContent())
+                .timestamp(savedMessage.getTimestamp())
+                .build();
     }
 }

@@ -32,8 +32,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     //jwt 필터 로직
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
-        System.out.println("입장");
         // [ 1. 수정/추가 ]
         // /ws-stomp/** 경로는 JWT 인증 필터를 건너뛰게 합니다.
         // (이 경로의 인증은 JwtChannelInterceptor가 담당)
@@ -41,7 +39,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
             filterChain.doFilter(request, response);
-            System.out.println("과연?");
             return; // (필터를 즉시 종료하고 다음으로 넘김)
         }
 

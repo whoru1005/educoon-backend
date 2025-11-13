@@ -31,20 +31,15 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         if(accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())){
 
             String authHeader = accessor.getFirstNativeHeader(AUTH_HEADER);
-            System.out.println("11111");
             if(authHeader != null && authHeader.startsWith(BEARER_PREFIX)){
                 String token = authHeader.substring(BEARER_PREFIX.length());
-                System.out.println("SSSssss");
                 try {
                     // 3. JwtUtil을 사용해 토큰 검증
                     if (jwtUtil.validateToken(token)) {
-                        System.out.println("ddddd");
                         // 4. 토큰이 유효하면, Authentication 객체를 생성
                         Authentication authentication = jwtUtil.getAuthentication(token);
-                        System.out.println("fffff");
                         // 5. [핵심] 웹소켓 세션에 인증 정보(Authentication)를 등록
                         accessor.setUser(authentication);
-                        System.out.println("ppppp");
                         log.info("WebSocket STOMP connected, user: {}", authentication.getName());
                     }
                 } catch (Exception e) {

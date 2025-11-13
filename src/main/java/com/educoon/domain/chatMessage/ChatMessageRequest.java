@@ -11,5 +11,5 @@ import lombok.Setter;
 public class ChatMessageRequest {
 
     @NotEmpty
-    private String message;
+    private String content;
 }
