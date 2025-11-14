@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8"> <title>EduCoon WebSocket (STOMP) Test</title>
+    <meta charset="UTF-8">
+    <title>EduCoon WebSocket (STOMP) Test</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
-<body>
+<body style="font-family: sans-serif;">
 <h2>EduCoon STOMP Test (JWT)</h2>
 <div>
     <label for="jwt">JWT Token (Bearer 제외):</label>
@@ -19,12 +20,16 @@
 </div>
 <hr>
 <div>
-    <label for="message">Message:</label>
+    <label for="message">Chat Message:</label>
     <input type="text" id="message" placeholder="보낼 메시지 입력...">
-    <button id="sendBtn" onclick="sendMessage()" disabled>Send Chat</button>
+    <button id="sendBtn" onclick="sendChatMessage()" disabled>Send Chat</button>
+</div>
+<div>
+    <button id="startBtn" onclick="studyStart()" disabled>Study Start</button>
+    <button id="stopBtn" onclick="studyStop()" disabled>Study Stop</button>
 </div>
 <h3>Logs:</h3>
-<div id="logs" style="border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 5px;"></div>
+<div id="logs" style="border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 5px; background: #f9f9f9;"></div>
 
 <script>
     var stompClient = null;
@@ -36,33 +41,25 @@
         currentRoomId = document.getElementById('roomId').value;
 
         if (!jwtToken || !currentRoomId) {
-            log("!! JWT와 Room ID를 모두 입력하세요.");
+            log("!! JWT와 Room ID를 모두 입력하세요.", 'ERROR');
             return;
         }
 
-        // 1-1. STOMP 헤더에 JWT 인증 토큰 추가
-        var headers = {
-            "Authorization": "Bearer " + jwtToken
-        };
-
-        // 1-2. /ws-stomp 엔드포인트로 연결
-        var socket = new SockJS('http://localhost:8080/ws-stomp'); // (포트 확인)
+        var headers = { "Authorization": "Bearer " + jwtToken };
+        var socket = new SockJS('http://localhost:8080/ws-stomp');
         stompClient = Stomp.over(socket);
 
-        log("Connecting to /ws-stomp...");
+        log("Connecting to /ws-stomp...", 'SYSTEM');
 
-        // 1-3. .connect(헤더, 연결성공콜백, 에러콜백)
         stompClient.connect(headers,
             function (frame) { // (연결 성공)
-                log("✅ CONNECTED: " + frame);
+                log("✅ CONNECTED: " + frame, 'SUCCESS');
                 setConnected(true);
-
-                // 1-4. 연결 성공 시, 방 구독(SUBSCRIBE) 시작
-                subscribeToRoom();
+                subscribeToRoom(); // 2. 구독 시작
+                joinRoom();        // 3. JOIN 이벤트 발행
             },
-            function (error) { // (연A결 실패)
-                log("🔴 CONNECTION ERROR: " + error);
-                log("JWT 토큰이 만료되었거나 유효하지 않은지 확인하세요.");
+            function (error) { // (연결 실패)
+                log("🔴 CONNECTION ERROR: " + error, 'ERROR');
                 setConnected(false);
             }
         );
@@ -71,44 +68,72 @@
     // --- 2. 방 구독 ---
     function subscribeToRoom() {
         var topic = '/topic/studyrooms/' + currentRoomId;
-        log(`Subscribing to ${topic}...`);
+        log(`Subscribing to ${topic}...`, 'SYSTEM');
 
-        // 2-1. /topic/rooms/{id} 구독
         stompClient.subscribe(topic, function (message) {
-            // 2-2. 메시지 수신 시 처리
-            var chatResponse = JSON.parse(message.body);
-            var logMsg = `[${chatResponse.timestamp}] ${chatResponse.senderNickname}: ${chatResponse.content}`;
-            log(logMsg);
+            var msg = JSON.parse(message.body);
+            var logMsg;
+            // [수정] 수신한 WebSocketMessage의 타입별로 로그 분기
+            switch(msg.type) {
+                case 'CHAT':
+                    logMsg = `[CHAT] ${msg.nickname}(${msg.userId}): ${msg.content}`;
+                    break;
+                case 'JOIN':
+                    logMsg = `[JOIN] ${msg.nickname}(${msg.userId})님이 입장했습니다.`;
+                    break;
+                case 'LEAVE':
+                    logMsg = `[LEAVE] ${msg.nickname}(${msg.userId})님이 퇴장했습니다.`;
+                    break;
+                case 'FOCUS_START':
+                    logMsg = `[FOCUS_START] ${msg.nickname}(${msg.userId})님이 공부를 시작했습니다. (Time: ${msg.studyStartTime})`;
+                    break;
+                case 'FOCUS_END':
+                    logMsg = `[FOCUS_STOP] ${msg.nickname}(${msg.userId})님이 공부를 종료했습니다.`;
+                    break;
+                default:
+                    logMsg = `[UNKNOWN] ${message.body}`;
+            }
+            log(logMsg, 'MESSAGE');
         });
     }
 
-    // --- 3. 메시지 발송 ---
-    function sendMessage() {
+    // --- 3. [신규] JOIN 이벤트 발행 ---
+    function joinRoom() {
+        var destination = '/app/studyrooms/' + currentRoomId + '/join';
+        log(`-> Publishing JOIN to ${destination}`, 'SYSTEM');
+        stompClient.send(destination, {}, JSON.stringify({})); // Body 없음
+    }
+
+    // --- 4. CHAT 메시지 발송 ---
+    function sendChatMessage() {
         var messageContent = document.getElementById('message').value;
         var destination = '/app/chat/studyrooms/' + currentRoomId + '/send';
-
         if (messageContent && stompClient) {
-            var chatRequest = {
-                'content': messageContent
-            };
-
-            // 3-1. /app/... 경로로 메시지 발행(PUBLISH)
-            stompClient.send(destination,
-                {}, // (헤더 없음)
-                JSON.stringify(chatRequest) // (body에 DTO를 JSON 문자열로)
-            );
-
-            log(`-> Sent to ${destination}: ${messageContent}`);
+            stompClient.send(destination, {}, JSON.stringify({'content': messageContent}));
             document.getElementById('message').value = '';
         }
     }
 
-    // --- 4. 연결 해제 ---
+    // --- 5. [신규] Study Start ---
+    function studyStart() {
+        var destination = '/app/studyrooms/' + currentRoomId + '/start';
+        log(`-> Publishing FOCUS_START to ${destination}`, 'SYSTEM');
+        stompClient.send(destination, {}, JSON.stringify({})); // Body 없음
+    }
+
+    // --- 6. [신규] Study Stop ---
+    function studyStop() {
+        var destination = '/app/studyrooms/' + currentRoomId + '/stop';
+        log(`-> Publishing FOCUS_STOP to ${destination}`, 'SYSTEM');
+        stompClient.send(destination, {}, JSON.stringify({})); // Body 없음
+    }
+
+    // --- 7. 연결 해제 ---
     function disconnect() {
         if (stompClient !== null) {
             stompClient.disconnect();
         }
-        log("Disconnected.");
+        log("Disconnected.", 'SYSTEM');
         setConnected(false);
     }
 
@@ -117,12 +142,20 @@
         document.getElementById('connectBtn').disabled = connected;
         document.getElementById('disconnectBtn').disabled = !connected;
         document.getElementById('sendBtn').disabled = !connected;
+        document.getElementById('startBtn').disabled = !connected;
+        document.getElementById('stopBtn').disabled = !connected;
     }
 
-    function log(message) {
+    function log(message, type) {
         var logsDiv = document.getElementById('logs');
-        logsDiv.innerHTML += `<div>${message}</div>`;
-        logsDiv.scrollTop = logsDiv.scrollHeight; // 자동 스크롤
+        var p = document.createElement('div');
+        if (type === 'ERROR') p.style.color = 'red';
+        if (type === 'SUCCESS') p.style.color = 'green';
+        if (type === 'SYSTEM') p.style.color = 'blue';
+        if (type === 'MESSAGE') p.style.color = 'black';
+        p.appendChild(document.createTextNode(message));
+        logsDiv.appendChild(p);
+        logsDiv.scrollTop = logsDiv.scrollHeight;
     }
 </script>
 </body>
