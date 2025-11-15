@@ -13,6 +13,8 @@ public class StudyRoomDetailResponse {
 
     private final String title;
 
+    private final String password;
+
     private final String description;
 
     private final int currentMembers;
@@ -26,6 +28,7 @@ public class StudyRoomDetailResponse {
     public StudyRoomDetailResponse(StudyRoom studyRoom){
         this.roomId = studyRoom.getRoomId();
         this.title = studyRoom.getTitle();
+        this.password = studyRoom.getPassword();
         this.description = studyRoom.getDescription();
         this.currentMembers = studyRoom.getParticipants().size();
         this.maxCapacity = studyRoom.getMaxCapacity();
