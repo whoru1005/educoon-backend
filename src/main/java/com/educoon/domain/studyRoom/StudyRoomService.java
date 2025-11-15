@@ -3,19 +3,23 @@ package com.educoon.domain.studyRoom;
 import com.educoon.domain.roomParticipant.RoomParticipant;
 import com.educoon.domain.roomParticipant.RoomParticipantRepository;
 import com.educoon.domain.roomParticipant.RoomParticipantResponse;
+import com.educoon.domain.studyRecord.StudyRecordRepository;
 import com.educoon.domain.tag.Tag;
 import com.educoon.domain.tag.TagRepository;
 import com.educoon.domain.user.User;
+import com.educoon.domain.user.UserDuration;
 import com.educoon.domain.user.UserRepository;
 import com.educoon.exception.CustomException;
 import com.educoon.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +32,7 @@ public class StudyRoomService {
     private final StudyRoomRepository studyRoomRepository;
     private final UserRepository userRepository;
     private final TagRepository tagRepository;
+    private final StudyRecordRepository studyRecordRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoomParticipantRepository roomParticipantRepository;
 
@@ -194,14 +199,59 @@ public class StudyRoomService {
         StudyRoom studyRoom = studyRoomRepository.findById(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
-        if(studyRoom.getOwner().getUserId().equals(user.getUserId())){
-            //TODO: 방장 탈퇴 로직 공부시간 조회 로직 만들면 구현
+        boolean isOwner = studyRoom.getOwner().getUserId().equals(user.getUserId());
+
+        // [ 5. 이 'if' 블록을 통째로 수정합니다 ]
+        if (isOwner) {
+            // [방장 탈퇴 로직]
+            User newOwner = findNextOwner(studyRoom, user);
+
+            if (newOwner == null) {
+                // [ CASE 1: 방에 다른 사람이 없음 ]
+                // 방장이 마지막 멤버이므로, 방을 "삭제"하고 종료합니다.
+                studyRoomRepository.delete(studyRoom);
+                return; // 탈퇴(삭제) 성공
+            } else {
+                // [ CASE 2: 위임할 사람이 있음 ]
+                // 방장직을 위임합니다.
+                studyRoom.setOwner(newOwner);
+            }
         }
 
         RoomParticipant participant = roomParticipantRepository.findByUserAndStudyRoom(user, studyRoom)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_PARTICIPANT));
 
         roomParticipantRepository.delete(participant);
+    }
+
+    private User findNextOwner(StudyRoom room, User currentOwner) {
+
+        // 1. "월간" 기준 설정 (최근 30일)
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = end.minusDays(30);
+
+        // 2. 월간 공부량 1위 조회 (방장 제외)
+        List<UserDuration> topStudierList = studyRecordRepository.findTopStudierInRoom(
+                room, currentOwner, start, end
+        );
+
+        if (!topStudierList.isEmpty()) {
+            // 2-1. 공부 기록이 있는 유저 중 1위 반환
+            return topStudierList.get(0).getUser();
+        }
+
+        // 3. (Fallback) 공부 기록이 아무도 없으면, 가장 오래된 멤버 조회
+        List<User> oldestMemberList = roomParticipantRepository.findOldestMemberInRoom(
+                room, currentOwner, PageRequest.of(0, 1) // LIMIT 1
+        );
+
+        if (!oldestMemberList.isEmpty()) {
+            // 3-1. 가장 오래된 멤버 반환
+            return oldestMemberList.get(0);
+        }
+
+        // 4. (Fallback) 방에 방장 외 아무도 없음
+        return null;
     }
 
     public void deleteRoom(Long roomId, String currentUserKakaoId){

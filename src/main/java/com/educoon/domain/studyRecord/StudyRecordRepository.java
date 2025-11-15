@@ -6,6 +6,7 @@ import com.educoon.domain.studyStats.MonthlyStudyStatsResponse;
 import com.educoon.domain.studyStats.StudyRoomStatsResponse;
 import com.educoon.domain.studyStats.WeeklyStudyStatsResponse;
 import com.educoon.domain.user.User;
+import com.educoon.domain.user.UserDuration;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -83,6 +84,20 @@ public interface StudyRecordRepository extends JpaRepository<StudyRecord, Long> 
             "ORDER BY MONTH(s.startTime) ASC")    // [ "FUNCTION('MONTH', ...
     List<MonthlyStudyStatsResponse> findMonthlyDurationSumByUserAndPeriod(
             @Param("user") User user,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+    @Query("SELECT new com.educoon.domain.studyStats.UserDuration(s.user, SUM(s.duration)) " +
+            "FROM StudyRecord s " +
+            "WHERE s.studyRoom = :room " +
+            "AND s.user != :owner " + // 방장 제외
+            "AND s.startTime BETWEEN :start AND :end " +
+            "GROUP BY s.user " +
+            "ORDER BY SUM(s.duration) DESC")
+    List<UserDuration> findTopStudierInRoom(
+            @Param("room") StudyRoom room,
+            @Param("owner") User owner,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );

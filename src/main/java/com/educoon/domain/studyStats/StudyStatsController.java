@@ -59,11 +59,23 @@ public class StudyStatsController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * [ED-105] 주간 공부방별 누적 공부 시간
-     * @param date (선택) YYYY-MM-DD. 없으면 이번 주.
-     */
-    @GetMapping("/weekly")
+    @GetMapping("/weekly/by-day")
+    public ResponseEntity<List<DailyStudyStatsResponse>> getWeeklyDailyStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
+        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
+
+        List<DailyStudyStatsResponse> response = studyStatsService.getWeeklyDailyStats(
+                kakaoId, targetDate
+        );
+        return ResponseEntity.ok(response);
+    }
+
+
+    @GetMapping("/weekly/by-room")
     public ResponseEntity<List<StudyRoomStatsResponse>> getWeeklyRoomStats(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -94,12 +106,8 @@ public class StudyStatsController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * [ED-106] 해당 주차 일별 누적 공부 시간
-     * @param date (선택) YYYY-MM-DD. 없으면 이번 주.
-     */
-    @GetMapping("/weekly/by-day")
-    public ResponseEntity<List<DailyStudyStatsResponse>> getWeeklyDailyStats(
+    @GetMapping("/monthly/by-week")
+    public ResponseEntity<List<MonthlyByWeekResponse>> getMonthlyWeeklyStats(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
@@ -107,35 +115,13 @@ public class StudyStatsController {
         String kakaoId = SecurityUtils.getCurrentUserKakaoId();
         LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
 
-        List<DailyStudyStatsResponse> response = studyStatsService.getWeeklyDailyStats(
+        List<MonthlyByWeekResponse> response = studyStatsService.getMonthlyWeeklyStats(
                 kakaoId, targetDate
         );
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * [ED-107] 월간 총 누적 공부 시간
-     * @param date (선택) YYYY-MM-DD. 없으면 이번 달.
-     */
-    @GetMapping("/monthly/total")
-    public ResponseEntity<StudyStatsTotalDurationResponse> getMonthlyTotalStats(
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate date
-    ) {
-        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
-        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
 
-        StudyStatsTotalDurationResponse response = studyStatsService.getMonthlyTotalDuration(
-                kakaoId, targetDate
-        );
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * [ED-108] 월간 공부방별 누적 공부 시간
-     * @param date (선택) YYYY-MM-DD. 없으면 이번 달.
-     */
     @GetMapping("/monthly/by-room")
     public ResponseEntity<List<StudyRoomStatsResponse>> getMonthlyRoomStats(
             @RequestParam(required = false)
@@ -151,8 +137,8 @@ public class StudyStatsController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/monthly/by-week")
-    public ResponseEntity<List<WeeklyStudyStatsResponse>> getMonthlyWeeklyStats(
+    @GetMapping("/monthly/total")
+    public ResponseEntity<StudyStatsTotalDurationResponse> getMonthlyTotalStats(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
@@ -160,35 +146,12 @@ public class StudyStatsController {
         String kakaoId = SecurityUtils.getCurrentUserKakaoId();
         LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
 
-        List<WeeklyStudyStatsResponse> response = studyStatsService.getMonthlyWeeklyStats(
+        StudyStatsTotalDurationResponse response = studyStatsService.getMonthlyTotalDuration(
                 kakaoId, targetDate
         );
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * [ED-109] 연간 총 누적 공부 시간
-     * @param date (선택) YYYY-MM-DD. 없으면 올해.
-     */
-    @GetMapping("/yearly/total")
-    public ResponseEntity<StudyStatsTotalDurationResponse> getYearlyTotalStats(
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate date
-    ) {
-        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
-        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
-
-        StudyStatsTotalDurationResponse response = studyStatsService.getYearlyTotalDuration(
-                kakaoId, targetDate
-        );
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * [ED-110] 해당 연 월별 누적 공부 시간
-     * @param date (선택) YYYY-MM-DD. 없으면 올해.
-     */
     @GetMapping("/yearly/by-month")
     public ResponseEntity<List<MonthlyStudyStatsResponse>> getYearlyMonthlyStats(
             @RequestParam(required = false)
@@ -218,4 +181,21 @@ public class StudyStatsController {
         );
         return ResponseEntity.ok(response);
     }
+
+
+    @GetMapping("/yearly/total")
+    public ResponseEntity<StudyStatsTotalDurationResponse> getYearlyTotalStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
+        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
+
+        StudyStatsTotalDurationResponse response = studyStatsService.getYearlyTotalDuration(
+                kakaoId, targetDate
+        );
+        return ResponseEntity.ok(response);
+    }
+
 }

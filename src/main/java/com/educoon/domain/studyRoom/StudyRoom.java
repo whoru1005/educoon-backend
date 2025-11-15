@@ -109,4 +109,8 @@ public class StudyRoom {
             });
         }
     }
+
+    public void setOwner(User newOwner){
+        this.owner = newOwner;
+    }
 }

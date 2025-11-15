@@ -10,15 +10,16 @@ import com.educoon.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.WeekFields;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -140,18 +141,38 @@ public class StudyStatsService {
         return studyRecordRepository.findRoomDurationSumByUserAndPeriod(user, startOfMonth, endOfMonth);
     }
 
-    public List<WeeklyStudyStatsResponse> getMonthlyWeeklyStats(String kakaoId, LocalDate date) {
+    public List<MonthlyByWeekResponse> getMonthlyWeeklyStats(String kakaoId, LocalDate date) {
 
         User user = userRepository.findByKakaoId(kakaoId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
 
+// 1. [DB 조회] 해당 월의 1일 ~ 마지막 날 계산
         LocalDateTime startOfMonth = date.withDayOfMonth(1).atStartOfDay();
         LocalDateTime endOfMonth = date.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
 
-        return studyRecordRepository.findWeeklyDurationSumByUserAndPeriod(
-                user, startOfMonth, endOfMonth
-        );
+        // 2. [DB 조회] Repository는 "연 기준 주차(weekOfYear)"로 그룹핑된 데이터를 반환
+        // (WeeklyStatsResponse DTO 재사용)
+        List<WeeklyStudyStatsResponse> statsByWeekOfYear =
+                studyRecordRepository.findWeeklyDurationSumByUserAndPeriod(
+                        user, startOfMonth, endOfMonth
+                );
+
+        // 3. [Java 변환] "연 기준 주차" -> "월 기준 주차"로 변환
+
+        // (참고: 주의 시작을 월요일로 하는 ISO 표준 사용)
+        WeekFields weekFields = WeekFields.of(Locale.KOREA); // (또는 Locale.getDefault())
+
+        // 이 달의 1일이 1년 중 몇 번째 주인지 계산 (e.g., 11/1일 -> 45주차)
+        int firstWeekNumOfMonth = startOfMonth.get(weekFields.weekOfYear());
+
+        return statsByWeekOfYear.stream()
+                .map(stat -> {
+                    // (e.g., 46주차 - 45주차 + 1 = 2번째 주)
+                    int weekOfMonth = stat.getWeekOfYear() - firstWeekNumOfMonth + 1;
+                    return new MonthlyByWeekResponse(weekOfMonth, stat.getTotalDuration());
+                })
+                .collect(Collectors.toList());
     }
 
 
