@@ -18,9 +18,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -146,9 +148,19 @@ public class StudyRoomService {
             throw new CustomException(ErrorCode.FORBIDDEN_ACTION);
         }
 
+        String rawPassword = studyRoomUpdateRequest.getPassword();
+        String encodedPassword;
+
+        if (StringUtils.hasText(rawPassword)) {
+            encodedPassword = passwordEncoder.encode(rawPassword);
+        } else {
+            encodedPassword = null;
+        }
+
+
         studyRoom.updateDetails(
                 studyRoomUpdateRequest.getTitle(),
-                passwordEncoder.encode(studyRoomUpdateRequest.getPassword()),
+                encodedPassword,
                 studyRoomUpdateRequest.getMaxCapacity(),
                 studyRoomUpdateRequest.getDescription()
         );
