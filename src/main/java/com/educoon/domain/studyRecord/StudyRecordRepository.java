@@ -88,7 +88,7 @@ public interface StudyRecordRepository extends JpaRepository<StudyRecord, Long> 
             @Param("end") LocalDateTime end
     );
 
-    @Query("SELECT new com.educoon.domain.studyStats.UserDuration(s.user, SUM(s.duration)) " +
+    @Query("SELECT new com.educoon.domain.user.UserDuration(s.user, SUM(s.duration)) " +
             "FROM StudyRecord s " +
             "WHERE s.studyRoom = :room " +
             "AND s.user != :owner " + // 방장 제외
