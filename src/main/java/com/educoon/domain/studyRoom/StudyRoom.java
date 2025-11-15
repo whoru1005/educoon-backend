@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Getter
@@ -97,17 +99,30 @@ public class StudyRoom {
     }
 
     public void updateTags(List<Tag> newTags){
-        this.roomTagMaps.clear();
+// 1. (효율적 비교를 위해) 새 태그 ID 목록을 Set으로 만듭니다.
+        Set<Long> newTagIds = newTags.stream()
+                .map(Tag::getTagId)
+                .collect(Collectors.toSet());
 
-        if(newTags != null){
-            newTags.forEach(tag ->{
-                RoomTagMap newMap = RoomTagMap.builder()
-                        .studyRoom(this)
-                        .tag(tag)
-                        .build();
-                this.roomTagMaps.add(newMap);
-            });
-        }
+        // 2. (제거) 기존 태그 맵(roomTagMaps)을 순회하며,
+        //      새 목록(newTagIds)에 없는 태그 맵을 삭제합니다.
+        this.roomTagMaps.removeIf(rtm ->
+                !newTagIds.contains(rtm.getTag().getTagId())
+        );
+
+        // 3. (추가) 현재 태그 맵에 있는 태그 ID 목록을 Set으로 만듭니다.
+        Set<Long> currentTagIds = this.roomTagMaps.stream()
+                .map(rtm -> rtm.getTag().getTagId())
+                .collect(Collectors.toSet());
+
+        // 4. (추가) 새 태그 목록(newTags)을 순회하며,
+        //      현재 목록(currentTagIds)에 없는 태그만 "추가"합니다.
+        newTags.forEach(newTag -> {
+            if (!currentTagIds.contains(newTag.getTagId())) {
+                // (기존 addTag 헬퍼 메서드 재사용)
+                this.addTag(newTag);
+            }
+        });
     }
 
     public void setOwner(User newOwner){
