@@ -2,7 +2,9 @@ package com.educoon.domain.studyRecord;
 
 import com.educoon.domain.studyRoom.StudyRoom;
 import com.educoon.domain.studyStats.DailyStudyStatsResponse;
+import com.educoon.domain.studyStats.MonthlyStudyStatsResponse;
 import com.educoon.domain.studyStats.StudyRoomStatsResponse;
+import com.educoon.domain.studyStats.WeeklyStudyStatsResponse;
 import com.educoon.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -49,14 +51,39 @@ public interface StudyRecordRepository extends JpaRepository<StudyRecord, Long> 
             @Param("end") LocalDateTime end
     );
 
-    @Query("SELECT new com.educoon.domain.studyStats.DailyStudyStatsResponse(FUNCTION('DATE', s.startTime), SUM(s.duration)) " + // [ 3. new (패키지 경로) 추가 ]
+    @Query("SELECT new com.educoon.domain.studyStats.DailyStudyStatsResponse(CAST(s.startTime AS LocalDate), SUM(s.duration)) " + // [ "FUNCTION" -> "CAST" ]
             "FROM StudyRecord s " +
             "WHERE s.user = :user " +
             "AND s.startTime BETWEEN :start AND :end " +
-            "GROUP BY FUNCTION('DATE', s.startTime) " +
-            "ORDER BY FUNCTION('DATE', s.startTime) ASC")
+            "GROUP BY CAST(s.startTime AS LocalDate) " +      // [ "FUNCTION" -> "CAST" ]
+            "ORDER BY CAST(s.startTime AS LocalDate) ASC")
     List<DailyStudyStatsResponse> findDailyStudyStatsByUserAndPeriod(
             @Param("user") User user,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
+
+    @Query("SELECT new com.educoon.domain.studyStats.WeeklyStudyStatsResponse(WEEK(s.startTime), SUM(s.duration)) " +
+            "FROM StudyRecord s " +
+            "WHERE s.user = :user " +
+            "AND s.startTime BETWEEN :start AND :end " +
+            "GROUP BY WEEK(s.startTime) " +
+            "ORDER BY WEEK(s.startTime) ASC") // 주차순 정렬
+    List<WeeklyStudyStatsResponse> findWeeklyDurationSumByUserAndPeriod(
+            @Param("user") User user,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+
+    @Query("SELECT new com.educoon.domain.studyStats.MonthlyStudyStatsResponse(MONTH(s.startTime), SUM(s.duration)) " + // [ "FUNCTION('MONTH', ...)" -> "MONTH(...)" ]
+            "FROM StudyRecord s " +
+            "WHERE s.user = :user " +
+            "AND s.startTime BETWEEN :start AND :end " +
+            "GROUP BY MONTH(s.startTime) " +      // [ "FUNCTION('MONTH', ...)" -> "MONTH(...)" ]
+            "ORDER BY MONTH(s.startTime) ASC")    // [ "FUNCTION('MONTH', ...
+    List<MonthlyStudyStatsResponse> findMonthlyDurationSumByUserAndPeriod(
+            @Param("user") User user,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }

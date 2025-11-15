@@ -40,8 +40,12 @@ public class StudyStatsController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/weekly/total")
-    public ResponseEntity<StudyStatsTotalDurationResponse> getWeeklyTotalStats(
+    /**
+     * [ED-102] 일간 총 누적 공부 시간
+     * @param date (선택) YYYY-MM-DD. 없으면 오늘 날짜.
+     */
+    @GetMapping("/daily/total")
+    public ResponseEntity<StudyStatsTotalDurationResponse> getDailyTotalStats(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
@@ -49,7 +53,7 @@ public class StudyStatsController {
         String kakaoId = SecurityUtils.getCurrentUserKakaoId();
         LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
 
-        StudyStatsTotalDurationResponse response = studyStatsService.getWeeklyTotalDuration(
+        StudyStatsTotalDurationResponse response = studyStatsService.getDailyTotalDuration(
                 kakaoId, targetDate
         );
         return ResponseEntity.ok(response);
@@ -74,6 +78,22 @@ public class StudyStatsController {
         return ResponseEntity.ok(response);
     }
 
+
+    @GetMapping("/weekly/total")
+    public ResponseEntity<StudyStatsTotalDurationResponse> getWeeklyTotalStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
+        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
+
+        StudyStatsTotalDurationResponse response = studyStatsService.getWeeklyTotalDuration(
+                kakaoId, targetDate
+        );
+        return ResponseEntity.ok(response);
+    }
+
     /**
      * [ED-106] 해당 주차 일별 누적 공부 시간
      * @param date (선택) YYYY-MM-DD. 없으면 이번 주.
@@ -88,6 +108,112 @@ public class StudyStatsController {
         LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
 
         List<DailyStudyStatsResponse> response = studyStatsService.getWeeklyDailyStats(
+                kakaoId, targetDate
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * [ED-107] 월간 총 누적 공부 시간
+     * @param date (선택) YYYY-MM-DD. 없으면 이번 달.
+     */
+    @GetMapping("/monthly/total")
+    public ResponseEntity<StudyStatsTotalDurationResponse> getMonthlyTotalStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
+        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
+
+        StudyStatsTotalDurationResponse response = studyStatsService.getMonthlyTotalDuration(
+                kakaoId, targetDate
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * [ED-108] 월간 공부방별 누적 공부 시간
+     * @param date (선택) YYYY-MM-DD. 없으면 이번 달.
+     */
+    @GetMapping("/monthly/by-room")
+    public ResponseEntity<List<StudyRoomStatsResponse>> getMonthlyRoomStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
+        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
+
+        List<StudyRoomStatsResponse> response = studyStatsService.getMonthlyRoomStats(
+                kakaoId, targetDate
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/monthly/by-week")
+    public ResponseEntity<List<WeeklyStudyStatsResponse>> getMonthlyWeeklyStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
+        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
+
+        List<WeeklyStudyStatsResponse> response = studyStatsService.getMonthlyWeeklyStats(
+                kakaoId, targetDate
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * [ED-109] 연간 총 누적 공부 시간
+     * @param date (선택) YYYY-MM-DD. 없으면 올해.
+     */
+    @GetMapping("/yearly/total")
+    public ResponseEntity<StudyStatsTotalDurationResponse> getYearlyTotalStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
+        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
+
+        StudyStatsTotalDurationResponse response = studyStatsService.getYearlyTotalDuration(
+                kakaoId, targetDate
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * [ED-110] 해당 연 월별 누적 공부 시간
+     * @param date (선택) YYYY-MM-DD. 없으면 올해.
+     */
+    @GetMapping("/yearly/by-month")
+    public ResponseEntity<List<MonthlyStudyStatsResponse>> getYearlyMonthlyStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
+        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
+
+        List<MonthlyStudyStatsResponse> response = studyStatsService.getYearlyMonthlyStats(
+                kakaoId, targetDate
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/yearly/by-room")
+    public ResponseEntity<List<StudyRoomStatsResponse>> getYearlyRoomStats(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        String kakaoId = SecurityUtils.getCurrentUserKakaoId();
+        LocalDate targetDate = Optional.ofNullable(date).orElse(DEFAULT_DATE);
+
+        List<StudyRoomStatsResponse> response = studyStatsService.getYearlyRoomStats(
                 kakaoId, targetDate
         );
         return ResponseEntity.ok(response);

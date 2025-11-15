@@ -51,4 +51,5 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
             "LEFT JOIN FETCH rtm.tag t " +
             "WHERE sr.roomId = :roomId")
     Optional<StudyRoom> findByIdWithTags(@Param("roomId") Long roomId);
+
 }

@@ -16,6 +16,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 @Service
@@ -51,6 +53,25 @@ public class StudyStatsService {
                     user, room, todayStart, todayEnd
             );
         }
+    }
+
+    /**
+     * [ED-102] 일간 총 누적 공부 시간
+     */
+    public StudyStatsTotalDurationResponse getDailyTotalDuration(String kakaoId, LocalDate date) {
+
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        LocalDateTime todayStart = date.atStartOfDay();
+        LocalDateTime todayEnd = date.atTime(LocalTime.MAX);
+
+        // (기존 쿼리 재사용)
+        Long totalDuration = studyRecordRepository.findDurationSumByUserAndPeriod(
+                user, todayStart, todayEnd
+        );
+
+        return new StudyStatsTotalDurationResponse(totalDuration);
     }
 
     public StudyStatsTotalDurationResponse getWeeklyTotalDuration(String kakaoId, LocalDate date){
@@ -92,6 +113,90 @@ public class StudyStatsService {
 
         return studyRecordRepository.findDailyStudyStatsByUserAndPeriod(
                 user, startOfWeek, endOfWeek
+        );
+    }
+
+    public StudyStatsTotalDurationResponse getMonthlyTotalDuration(String kakaoId, LocalDate date){
+
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        LocalDateTime startOfMonth = date.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonth = date.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
+
+        Long totalDuration = studyRecordRepository.findDurationSumByUserAndPeriod(user, startOfMonth, endOfMonth);
+
+        return new StudyStatsTotalDurationResponse(totalDuration);
+    }
+
+    public List<StudyRoomStatsResponse> getMonthlyRoomStats(String kakaoId, LocalDate date){
+
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        LocalDateTime startOfMonth = date.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonth = date.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
+
+        return studyRecordRepository.findRoomDurationSumByUserAndPeriod(user, startOfMonth, endOfMonth);
+    }
+
+    public List<WeeklyStudyStatsResponse> getMonthlyWeeklyStats(String kakaoId, LocalDate date) {
+
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+
+        LocalDateTime startOfMonth = date.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime endOfMonth = date.with(TemporalAdjusters.lastDayOfMonth()).atTime(LocalTime.MAX);
+
+        return studyRecordRepository.findWeeklyDurationSumByUserAndPeriod(
+                user, startOfMonth, endOfMonth
+        );
+    }
+
+
+    public StudyStatsTotalDurationResponse getYearlyTotalDuration(String kakaoId, LocalDate date) {
+
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        LocalDateTime startOfYear = date.withDayOfYear(1).atStartOfDay();
+        LocalDateTime endOfYear = date.with(TemporalAdjusters.lastDayOfYear()).atTime(LocalTime.MAX);
+
+        Long totalDuration = studyRecordRepository.findDurationSumByUserAndPeriod(
+                user, startOfYear, endOfYear
+        );
+
+        return new StudyStatsTotalDurationResponse(totalDuration);
+    }
+
+    /**
+     * [ED-110] 해당 연 월별 누적 공부 시간
+     */
+    public List<MonthlyStudyStatsResponse> getYearlyMonthlyStats(String kakaoId, LocalDate date) {
+
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        LocalDateTime startOfYear = date.withDayOfYear(1).atStartOfDay();
+        LocalDateTime endOfYear = date.with(TemporalAdjusters.lastDayOfYear()).atTime(LocalTime.MAX);
+
+        return studyRecordRepository.findMonthlyDurationSumByUserAndPeriod(
+                user, startOfYear, endOfYear
+        );
+    }
+
+    public List<StudyRoomStatsResponse> getYearlyRoomStats(String kakaoId, LocalDate date) {
+
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        LocalDateTime startOfYear = date.withDayOfYear(1).atStartOfDay();
+        LocalDateTime endOfYear = date.with(TemporalAdjusters.lastDayOfYear()).atTime(LocalTime.MAX);
+
+        // [쿼리 재사용] (ED-103, ED-105, ED-108과 동일한 쿼리 사용)
+        return studyRecordRepository.findRoomDurationSumByUserAndPeriod(
+                user, startOfYear, endOfYear
         );
     }
 }
