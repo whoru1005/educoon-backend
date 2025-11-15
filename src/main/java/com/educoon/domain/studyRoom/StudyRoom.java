@@ -92,10 +92,10 @@ public class StudyRoom {
 
     public void updateDetails(String title, String password, Integer maxCapacity, String description){
         this.title = title;
-        this.password = (password != null && !password.isEmpty()) ? password : null;
+        this.password = password;
         this.maxCapacity = maxCapacity;
         this.description = description;
-        this.isPublic = password != null && !password.isEmpty();
+        this.isPublic = (password == null);
     }
 
     public void updateTags(List<Tag> newTags){
