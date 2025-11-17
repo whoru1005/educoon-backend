@@ -21,7 +21,7 @@ public class StudyStatsController {
     private final StudyStatsService studyStatsService;
     private final LocalDate DEFAULT_DATE = LocalDate.now();
 
-    @GetMapping("/daily")
+    @GetMapping("/daily/by-room")
     public ResponseEntity<List<StudyRoomStatsResponse>> getDailyRoomStats(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
