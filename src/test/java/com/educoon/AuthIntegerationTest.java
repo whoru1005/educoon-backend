@@ -39,24 +39,25 @@ public class AuthIntegerationTest {
     private JwtUtil jwtUtil; // 테스트용 JWT를 생성하기 위한 도구
 
     private User testUser;
-    private String testUserKakaoId = "test-kakao-12345";
+    private String testUserKakaoId = "TEST_USER_1234";
     private String testUserAccessToken;
 
     // 각 테스트(@Test)가 실행되기 전에(@BeforeEach) 딱 한 번씩 실행
     @BeforeEach
     void setUp() {
         // 1. 테스트용 유저를 DB에 미리 저장합니다.
-        testUser = User.builder()
-                .kakaoId(testUserKakaoId)
-                .nickname("테스트유저")
-                .profileImageUrl("http://test.image.com/img.png")
-                .build();
-        userRepository.save(testUser);
+        testUser = userRepository.findByNickname("열공하는 철수");
 
         // 2. 이 유저 정보로 30분짜리 Access Token을 강제로 생성합니다.
         Collection<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         JwtTokenInfo jwtTokenInfo = jwtUtil.generateTokenInfo(testUserKakaoId, authorities);
         testUserAccessToken = jwtTokenInfo.getAccessToken();
+
+        // [추가] 요청하신 JWT Access Token을 콘솔에 출력합니다.
+        System.out.println("====================================================");
+        System.out.println("[Test] Generated Access Token:");
+        System.out.println(testUserAccessToken);
+        System.out.println("====================================================");
     }
 
     @Test
@@ -93,6 +94,12 @@ public class AuthIntegerationTest {
         // 2. '진짜' 키로 서명되었지만 '만료 시간만 과거'인 토큰을 헬퍼로 생성합니다.
         Collection<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         String expiredToken = jwtUtil.generateExpiredToken(testUserKakaoId, authorities);
+
+        // [추가] 만료된 토큰도 콘솔에 출력합니다.
+        System.out.println("====================================================");
+        System.out.println("[Test] Generated Expired Token:");
+        System.out.println(expiredToken);
+        System.out.println("====================================================");
 
         // [When] 만료된 토큰으로 호출
         mockMvc.perform(get("/api/users/me")
