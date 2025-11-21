@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "ai_notes")
 public class AiNote {
 
@@ -25,6 +28,9 @@ public class AiNote {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(nullable = false, length = 255)
+    private String title;
+
     @Column(length = 255)
     private String originalFileRef;
 
@@ -33,7 +39,7 @@ public class AiNote {
     private String summaryContent;
 
     @Column(nullable = false, updatable = false)
-    @Builder.Default
+    @CreatedDate
     private LocalDateTime createdAt = LocalDateTime.now();
 }
 
