@@ -48,15 +48,12 @@ public class AiService {
         };
 
         // 2. 동적 프롬프트 생성
-        String prompt = String.format(
-                "다음 텍스트를 기반으로 \"%s\" 유형의 퀴즈 5개를 생성해줘. " +
-                        "반드시 다음 JSON 형식 배열로만 응답해줘. " +
-                        "[{\"questionType\": \"%s\", \"questionText\": \"...\", \"options\": [...], \"answer\": \"...\"}]. " +
-                        "다른 설명은 절대 포함하지 마. \n\n%s",
-                typeDescription, quizType.name(), text // (예: "객관식", "MULTIPLE_CHOICE", "텍스트 원본...")
+        String instructions = String.format(
+                "다음 텍스트를 기반으로 \"%s\" 유형의 퀴즈 5개를 생성해줘. questionType 필드에는 반드시 \"%s\"를 넣어줘.",
+                typeDescription, quizType.name()
         );
 
-        return geminiApiService.generateContent(prompt);
+        return geminiApiService.generateJsonContent(text, instructions);
     }
 
     public Mono<String> processPdf(InputStream inputStream, String action, QuestionType quizType) {

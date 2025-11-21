@@ -56,7 +56,7 @@ public class GeminiApiService {
         GeminiRequest requestBody = new GeminiRequest(
                 new ContentRequest[]{
                         new ContentRequest(
-                                new Part[]{ new Part("다음 질문에 대해 답변을 하는데 답변은 마크다운을 사용하지 말고 엔터는 줄바꿈 문자로 바꿔서 해줘" + prompt) }
+                                new Part[]{ new Part(prompt) }
                         )
                 },
                 DEFAULT_SAFETY_SETTINGS
@@ -81,11 +81,15 @@ public class GeminiApiService {
                 });
     }
 
-    public Mono<String> generateJsonContent(String prompt){
-        String jsonPrompt = "IMPORTANT: Respond ONLY with a valid JSON array matching this format: " +
-                "[{\"questionType\": \"...\", \"questionText\": \"...\", \"options\": [...], \"answer\": \"...\"}]. " +
-                "Do not include any other text or markdown. \n\n" +
-                "Generate quizzes for this text: \n" + prompt;
+    public Mono<String> generateJsonContent(String prompt, String instructions) {
+        String jsonPrompt = String.format(
+                "IMPORTANT: Respond ONLY with a valid JSON array matching this format: " +
+                        "[{\"questionType\": \"...\", \"questionText\": \"...\", \"options\": [...], \"answer\": \"...\"}]. " +
+                        "Do not include any other text or markdown. \n\n" +
+                        "%s \n\n" +
+                        "[Text]: \n%s",
+                instructions, prompt
+        );
 
         return generateContent(jsonPrompt);
     }
