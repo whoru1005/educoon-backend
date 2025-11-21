@@ -56,7 +56,7 @@ public class GeminiApiService {
         GeminiRequest requestBody = new GeminiRequest(
                 new ContentRequest[]{
                         new ContentRequest(
-                                new Part[]{ new Part(prompt) }
+                                new Part[]{ new Part("다음 질문에 대해 답변을 하는데 답변은 마크다운을 사용하지 말고 엔터는 줄바꿈 문자로 바꿔서 해줘" + prompt) }
                         )
                 },
                 DEFAULT_SAFETY_SETTINGS
