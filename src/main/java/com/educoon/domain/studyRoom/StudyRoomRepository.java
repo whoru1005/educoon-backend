@@ -52,4 +52,11 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
             "WHERE sr.roomId = :roomId")
     Optional<StudyRoom> findByIdWithTags(@Param("roomId") Long roomId);
 
+    @Query("SELECT DISTINCT s FROM StudyRoom s " +
+            "LEFT JOIN FETCH s.roomTagMaps rtm " +
+            "LEFT JOIN FETCH rtm.tag t " +
+            "LEFT JOIN FETCH s.participants p " +
+            "WHERE s.title LIKE %:keyword% OR t.name LIKE %:keyword%")
+    List<StudyRoom> findByKeywordWithTags(@Param("keyword") String keyword, Pageable pageable);
+
 }

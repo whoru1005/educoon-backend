@@ -3,6 +3,7 @@ package com.educoon.domain.ai;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +19,7 @@ record TextRequest(String text){}
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/ai")
+@Slf4j
 public class AiController {
 
     private final AiService aiService;
@@ -26,10 +28,7 @@ public class AiController {
     // Gemini API 응답 대기 시간 설정 (30초)
     private static final Duration AI_TIMEOUT = Duration.ofSeconds(30);
 
-    /**
-     * 1:1 AI 채팅 및 스터디룸 추천
-     * [반환] {"response": "내용..."}
-     */
+
     @PostMapping("/chat")
     public ResponseEntity<Map<String, String>> chat(@RequestBody ChatRequest request){
 
@@ -53,10 +52,7 @@ public class AiController {
         return ResponseEntity.ok(Map.of("summary", summary));
     }
 
-    /**
-     * 텍스트로 퀴즈 생성
-     * [반환] 진짜 JSON 배열 (String 아님) -> [{"question":...}, ...]
-     */
+
     @PostMapping("/quiz-text")
     public ResponseEntity<Object> quizText(
             @RequestBody TextRequest request,
@@ -65,16 +61,16 @@ public class AiController {
         String quizJsonString = aiService.quizText(request.text(), quizType)
                 .block(AI_TIMEOUT);
 
-        try {
-            // [수정] AI가 준 "JSON 모양의 String"을 "진짜 Java Object(List)"로 변환
-            // 이렇게 해야 프론트엔드가 String이 아닌 Array로 바로 받습니다.
-            Object jsonObject = objectMapper.readValue(quizJsonString, Object.class);
-            return ResponseEntity.ok(jsonObject);
+        String cleanJson = cleanJsonString(quizJsonString);
 
+        try {
+            Object jsonObject = objectMapper.readValue(cleanJson, Object.class);
+            return ResponseEntity.ok(jsonObject);
         } catch (JsonProcessingException e) {
-            // AI가 가끔 깨진 JSON을 줄 경우 대비
-            return ResponseEntity.internalServerError().body(Map.of("error", "AI 응답 파싱 실패"));
+            log.error("JSON 파싱 실패. 원본: {}", quizJsonString);
+
         }
+        return null;
     }
 
     /**
@@ -83,7 +79,7 @@ public class AiController {
     @PostMapping("/upload-pdf")
     public ResponseEntity<Object> uploadPdf(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("action") String action, // "summary" 또는 "quiz"
+            @RequestParam("action") String action,
             @RequestParam(name = "quizType", required = false) QuestionType quizType
     ) {
         if (file.isEmpty()) {
@@ -95,16 +91,27 @@ public class AiController {
                     .block(AI_TIMEOUT);
 
             if ("quiz".equals(action)) {
-                // 퀴즈일 경우: JSON String -> JSON Object 변환 후 반환
-                Object jsonObject = objectMapper.readValue(responseBody, Object.class);
+                String cleanJson = cleanJsonString(responseBody); // 청소!
+                Object jsonObject = objectMapper.readValue(cleanJson, Object.class);
                 return ResponseEntity.ok(jsonObject);
             } else {
-                // 요약일 경우: {"summary": "..."} 형태로 반환
                 return ResponseEntity.ok(Map.of("summary", responseBody));
             }
 
         } catch (IOException e) {
             throw new RuntimeException("PDF 파일 처리 중 오류 발생", e);
         }
+    }
+
+    private String cleanJsonString(String response) {
+        if (response == null) return "[]";
+
+        // 1. ```json (또는 ```) 으로 시작하는 부분 제거
+        // 2. 끝에 있는 ``` 제거
+        // 3. 앞뒤 공백 제거
+        return response.replaceAll("^```json", "")
+                .replaceAll("^```", "")
+                .replaceAll("```$", "")
+                .trim();
     }
 }

@@ -31,6 +31,6 @@ public class AiQuizQuestion {
     @Lob
     private String options;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String answer;
 }

@@ -37,13 +37,13 @@ public class AiQuizController {
         }
         log.info("==================================");
 
-        // 1. 인증 정보 가져오기
+
         String kakaoId = SecurityUtils.getCurrentUserKakaoId();
 
         User user = userRepository.findByKakaoId(kakaoId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. 저장 서비스 호출
+
         Long savedQuizId = aiQuizService.saveQuiz(user, request);
 
         return ResponseEntity.ok()

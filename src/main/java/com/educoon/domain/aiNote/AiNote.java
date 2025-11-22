@@ -35,7 +35,7 @@ public class AiNote {
     private String originalFileRef;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String summaryContent;
 
     @Column(nullable = false, updatable = false)

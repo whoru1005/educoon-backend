@@ -62,10 +62,10 @@ public class AiService {
         if ("summary".equals(action)) {
             return summarizeText(text);
         } else if ("quiz".equals(action)) {
-            if (quizType == null) { // 퀴즈 액션인데 타입이 없으면 에러
+            if (quizType == null) {
                 return Mono.error(new IllegalArgumentException("Quiz type is required for quiz action"));
             }
-            // 3. 퀴즈 타입 전달
+
             return quizText(text, quizType);
         } else {
             return Mono.error(new IllegalArgumentException("Invalid action type"));
@@ -80,9 +80,9 @@ public class AiService {
                     String trimmedKeyword = keyword.trim();
                     log.info("AI 추출 키워드: {}", trimmedKeyword);
 
-                    List<StudyRoom> foundRooms = studyRoomRepository.findByTitleContaining(
+                    List<StudyRoom> foundRooms = studyRoomRepository.findByKeywordWithTags(
                             trimmedKeyword, PageRequest.of(0, 3) // (최대 3개만)
-                    ).getContent();
+                    );
 
                     String finalPrompt;
                     if (foundRooms.isEmpty()) {
