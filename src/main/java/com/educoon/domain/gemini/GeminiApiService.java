@@ -46,17 +46,17 @@ public class GeminiApiService {
     };
 
 
-    public Mono<String> generateContent(String prompt){
+    public Mono<String> generateContent(String prompt) {
         WebClient webClient = webClientBuilder.baseUrl(apiUrl)
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader("x-goog-api-key", apiKey) // [!!] 이 줄을 추가합니다.
+                .defaultHeader("x-goog-api-key", apiKey)
                 .build();
 
 
         GeminiRequest requestBody = new GeminiRequest(
                 new ContentRequest[]{
                         new ContentRequest(
-                                new Part[]{ new Part(prompt) }
+                                new Part[]{new Part(prompt)}
                         )
                 },
                 DEFAULT_SAFETY_SETTINGS
@@ -67,30 +67,51 @@ public class GeminiApiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(GeminiResponse.class)
-                .map(geminiResponse ->{
+                .map(geminiResponse -> {
                     try {
                         System.out.println(geminiResponse.candidates()[0].content().parts()[0].text());
                         return geminiResponse.candidates()[0].content().parts()[0].text();
-                    } catch (Exception e){
+                    } catch (Exception e) {
                         log.error("Gemini API 응답 파싱 실패", e);
                         throw new RuntimeException("AI 응답을 처리하는 중 오류가 발생");
                     }
                 })
-                .doOnError(error ->{
+                .doOnError(error -> {
                     log.error("Gemini API 호출 실패: {}", error.getMessage());
                 });
     }
 
     public Mono<String> generateJsonContent(String prompt, String instructions) {
         String jsonPrompt = String.format(
-                "IMPORTANT: Respond ONLY with a valid JSON array matching this format: " +
-                        "[{\"questionType\": \"...\", \"questionText\": \"...\", \"options\": [...], \"answer\": \"...\"}]. " +
-                        "Do not include any other text or markdown. \n\n" +
+                "IMPORTANT: Respond ONLY with a valid raw JSON array. \n" +
+                        "Format: [{\"questionType\": \"...\", \"questionText\": \"...\", \"options\": [...], \"answer\": \"...\"}]. \n" +
+                        "Do NOT use markdown code blocks (```json). Just return the raw JSON string. \n\n" +
                         "%s \n\n" +
                         "[Text]: \n%s",
                 instructions, prompt
         );
 
-        return generateContent(jsonPrompt);
+        // generateContent 호출 후 -> 결과값(text)이 오면 -> cleanJson으로 씻어서 반환
+        return generateContent(jsonPrompt)
+                .map(this::cleanJson);
+    }
+
+    // [유틸 메서드] 백틱 제거 로직 (이 클래스 안에 추가하세요)
+    private String cleanJson(String text) {
+        if (text == null) return "[]";
+
+        String cleaned = text.trim();
+
+        // 1. 시작 부분의 ```json 또는 ``` 제거
+        if (cleaned.startsWith("```")) {
+            cleaned = cleaned.replaceAll("^```json", "").replaceAll("^```", "");
+        }
+
+        // 2. 끝 부분의 ``` 제거
+        if (cleaned.endsWith("```")) {
+            cleaned = cleaned.replaceAll("```$", "");
+        }
+
+        return cleaned.trim();
     }
 }

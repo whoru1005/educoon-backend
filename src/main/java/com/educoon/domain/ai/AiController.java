@@ -58,24 +58,24 @@ public class AiController {
             @RequestBody TextRequest request,
             @RequestParam("quizType") QuestionType quizType
     ) {
+        // [수정] 서비스에서 이미 cleanJson 된 문자열이 넘어옴
         String quizJsonString = aiService.quizText(request.text(), quizType)
                 .block(AI_TIMEOUT);
 
-        String cleanJson = cleanJsonString(quizJsonString);
-
         try {
-            Object jsonObject = objectMapper.readValue(cleanJson, Object.class);
+            // 바로 파싱하면 됨
+            Object jsonObject = objectMapper.readValue(quizJsonString, Object.class);
             return ResponseEntity.ok(jsonObject);
         } catch (JsonProcessingException e) {
             log.error("JSON 파싱 실패. 원본: {}", quizJsonString);
-
+            return ResponseEntity.internalServerError().body(Map.of("error", "AI 응답 파싱 실패"));
         }
-        return null;
     }
 
     /**
      * PDF 업로드 및 처리 (요약 or 퀴즈)
      */
+
     @PostMapping("/upload-pdf")
     public ResponseEntity<Object> uploadPdf(
             @RequestParam("file") MultipartFile file,
@@ -91,8 +91,8 @@ public class AiController {
                     .block(AI_TIMEOUT);
 
             if ("quiz".equals(action)) {
-                String cleanJson = cleanJsonString(responseBody); // 청소!
-                Object jsonObject = objectMapper.readValue(cleanJson, Object.class);
+                // [수정] 여기도 마찬가지로 바로 파싱
+                Object jsonObject = objectMapper.readValue(responseBody, Object.class);
                 return ResponseEntity.ok(jsonObject);
             } else {
                 return ResponseEntity.ok(Map.of("summary", responseBody));
@@ -103,15 +103,4 @@ public class AiController {
         }
     }
 
-    private String cleanJsonString(String response) {
-        if (response == null) return "[]";
-
-        // 1. ```json (또는 ```) 으로 시작하는 부분 제거
-        // 2. 끝에 있는 ``` 제거
-        // 3. 앞뒤 공백 제거
-        return response.replaceAll("^```json", "")
-                .replaceAll("^```", "")
-                .replaceAll("```$", "")
-                .trim();
-    }
 }
