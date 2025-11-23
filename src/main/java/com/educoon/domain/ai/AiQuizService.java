@@ -22,7 +22,6 @@ public class AiQuizService {
         AiQuiz quiz = AiQuiz.builder()
                 .user(user)
                 .title(request.title())
-                .originalFileRef(request.originalFileRef())
                 .build();
 
         // 2. 문항(자식) 엔티티 변환 및 추가

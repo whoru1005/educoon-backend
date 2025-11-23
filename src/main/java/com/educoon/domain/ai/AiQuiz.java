@@ -33,9 +33,6 @@ public class AiQuiz{
     @Column(nullable = false, length = 255)
     private String title;
 
-    @Column(length = 500)
-    private String originalFileRef;
-
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
