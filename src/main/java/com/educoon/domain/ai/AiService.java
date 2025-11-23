@@ -72,28 +72,72 @@ public class AiService {
         }
     }
 
-    private Mono<String> recommendStudyRoom(String message){
-        String keywordPrompt = "다음 문장에서 스터디 주제(키워드) 1개만 추출해줘. (예: JPA, 토익, 정보처리기사): " + message;
+    private Mono<String> recommendStudyRoom(String message) {
+        // 1. 키워드 추출 (이 부분은 기존과 동일)
+        String keywordPrompt = "다음 문장에서 핵심 검색 키워드 단어 1개만 추출해줘. 설명 없이 단어만 대답해. (예: '스프링부트 스터디 추천해줘' -> '스프링부트'): " + message;
 
         return geminiApiService.generateContent(keywordPrompt)
                 .flatMap(keyword -> {
                     String trimmedKeyword = keyword.trim();
-                    log.info("AI 추출 키워드: {}", trimmedKeyword);
+                    log.info("사용자 질문: {}", message);
+                    log.info("AI 추출 키워드: '{}'", trimmedKeyword);
 
+                    // 2. DB 검색 (N+1 해결된 메서드 사용)
                     List<StudyRoom> foundRooms = studyRoomRepository.findByKeywordWithTags(
-                            trimmedKeyword, PageRequest.of(0, 3) // (최대 3개만)
+                            trimmedKeyword, PageRequest.of(0, 5) // 5개 정도만
                     );
 
+                    log.info("검색된 방 개수: {}", foundRooms.size());
+
                     String finalPrompt;
+
+                    // =========================================================
+                    // 💡 핵심 수정: 상황별 프롬프트 분리
+                    // =========================================================
+
                     if (foundRooms.isEmpty()) {
-                        finalPrompt = message + "\n\n(참고: 위 질문에 대해 답변해줘. 아쉽게도 관련 스터디룸은 찾지 못했어.)";
+                        // [CASE 1: 방이 없을 때] -> 위로와 조언, 방 만들기 권유
+                        finalPrompt = String.format(
+                                "사용자가 '%s'에 대한 스터디룸을 찾고 싶어 하는데, 현재 개설된 방이 하나도 없어.\n\n" +
+                                        "**지시사항:**\n" +
+                                        "1. 우선 아쉬움을 표현해줘.\n" +
+                                        "2. '%s' 공부를 혼자 시작할 때 도움이 되는 팁이나 학습 로드맵을 간단히 알려줘.\n" +
+                                        "3. 마지막에 '원하는 방이 없다면 직접 스터디룸을 만들어 팀원을 모집해보세요!'라고 격려해줘.",
+                                trimmedKeyword, trimmedKeyword
+                        );
                     } else {
+                        // [CASE 2: 방이 있을 때] -> 태그 정보 추가
                         String roomList = foundRooms.stream()
-                                .map(room -> String.format("- %s (현재 %d명)", room.getTitle(), room.getParticipants().size())) // (참고: N+1 문제 발생 가능성 있음)
-                                .collect(Collectors.joining("\n"));
-                        finalPrompt = message + "\n\n(참고: 위 질문에 대해 답변해주고, 문장 마지막에 아래 스터디룸 목록을 추천해줘:\n" + roomList + ")";
+                                .map(room -> {
+                                    // 1. 태그 리스트를 문자열로 변환 (예: "#자바 #스프링")
+                                    String tags = room.getRoomTagMaps().stream()
+                                            .map(rtm -> "#" + rtm.getTag().getName())
+                                            .collect(Collectors.joining(" "));
+
+                                    // 2. 정보 포맷팅
+                                    return String.format(
+                                            "- 방 제목: %s\n  ✨태그: %s\n  참여 인원: %d명 / %d명\n  소개: %s",
+                                            room.getTitle(),
+                                            tags.isEmpty() ? "(태그 없음)" : tags, // 태그가 비어있을 경우 처리
+                                            room.getParticipants().size(),
+                                            room.getMaxCapacity(),
+                                            room.getDescription() != null ? room.getDescription() : "소개 없음"
+                                    );
+                                })
+                                .collect(Collectors.joining("\n\n"));
+
+                        finalPrompt = String.format(
+                                "사용자가 요청한 키워드('%s')와 일치하는 스터디룸 목록이야:\n\n%s\n\n" +
+                                        "**[매우 중요 - 엄격한 지시사항]**\n" +
+                                        "1. **절대** 공부 방법이나 개념에 대해 설명하지 마. (TMI 금지)\n" +
+                                        "2. 서론은 짧게 '회원님에게 딱 맞는 스터디룸을 찾았어요!' 정도로만 해.\n" +
+                                        "3. 위 목록을 바탕으로 각 스터디룸의 **제목과 태그**를 강조해서 매력적으로 추천해줘.\n" +
+                                        "4. 다른 쓸데없는 말은 덧붙이지 마.",
+                                trimmedKeyword, roomList
+                        );
                     }
 
+                    // 3. 최종 프롬프트로 AI 호출
                     return geminiApiService.generateContent(finalPrompt);
                 });
     }
