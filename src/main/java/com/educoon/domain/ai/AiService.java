@@ -105,20 +105,19 @@ public class AiService {
                                         "3. 마지막에 '원하는 방이 없다면 직접 스터디룸을 만들어 팀원을 모집해보세요!'라고 격려해줘.",
                                 trimmedKeyword, trimmedKeyword
                         );
-                    } else {
-                        // [CASE 2: 방이 있을 때] -> 태그 정보 추가
+                    }else {
+                        // [CASE 2: 방이 있을 때] -> 상세 정보 포함
                         String roomList = foundRooms.stream()
                                 .map(room -> {
-                                    // 1. 태그 리스트를 문자열로 변환 (예: "#자바 #스프링")
                                     String tags = room.getRoomTagMaps().stream()
                                             .map(rtm -> "#" + rtm.getTag().getName())
                                             .collect(Collectors.joining(" "));
 
-                                    // 2. 정보 포맷팅
+                                    // 1. 데이터 포맷을 명확하게 구조화
                                     return String.format(
-                                            "- 방 제목: %s\n  ✨태그: %s\n  참여 인원: %d명 / %d명\n  소개: %s",
+                                            "[%s]\n- 태그: %s\n- 현황: %d명 / %d명 (참여/최대)\n- 방 소개: %s",
                                             room.getTitle(),
-                                            tags.isEmpty() ? "(태그 없음)" : tags, // 태그가 비어있을 경우 처리
+                                            tags.isEmpty() ? "(태그 없음)" : tags,
                                             room.getParticipants().size(),
                                             room.getMaxCapacity(),
                                             room.getDescription() != null ? room.getDescription() : "소개 없음"
@@ -126,13 +125,15 @@ public class AiService {
                                 })
                                 .collect(Collectors.joining("\n\n"));
 
+                        // 2. 프롬프트 지시사항 구체화 (소개글, 인원 포함 강제)
                         finalPrompt = String.format(
                                 "사용자가 요청한 키워드('%s')와 일치하는 스터디룸 목록이야:\n\n%s\n\n" +
                                         "**[매우 중요 - 엄격한 지시사항]**\n" +
                                         "1. **절대** 공부 방법이나 개념에 대해 설명하지 마. (TMI 금지)\n" +
                                         "2. 서론은 짧게 '회원님에게 딱 맞는 스터디룸을 찾았어요!' 정도로만 해.\n" +
-                                        "3. 위 목록을 바탕으로 각 스터디룸의 **제목과 태그**를 강조해서 매력적으로 추천해줘.\n" +
-                                        "4. 다른 쓸데없는 말은 덧붙이지 마.",
+                                        "3. 각 스터디룸을 추천할 때 **방 제목, 태그, 참여 현황(인원), 방 소개글**을 모두 포함해서 설명해줘.\n" + // [수정됨]
+                                        "4. 사용자가 방을 선택할 수 있도록 구체적인 정보를 제공해줘.\n" + // [수정됨]
+                                        "5. 다른 쓸데없는 말은 덧붙이지 마.",
                                 trimmedKeyword, roomList
                         );
                     }
