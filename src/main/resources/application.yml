@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: EduCoon
+
+  # 기본적으로 'local' 프로필을 실행 (내 컴퓨터용)
+  profiles:
+    active: local
+
+  # 파일 업로드 용량 설정 (공통)
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # JPA 공통 설정
+  jpa:
+    open-in-view: false
+    database-platform: org.hibernate.dialect.MySQLDialect
+

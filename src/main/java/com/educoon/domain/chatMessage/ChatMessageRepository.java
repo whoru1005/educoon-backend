@@ -1,5 +1,7 @@
 package com.educoon.domain.chatMessage;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -7,4 +9,6 @@ import java.util.List;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
     List<ChatMessage> findTop50ByStudyRoomRoomIdOrderByTimestampDesc(Long roomId);
+
+    Page<ChatMessage> findAllByStudyRoomRoomIdOrderByTimestampDesc(Long roomId, Pageable pageable);
 }
