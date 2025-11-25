@@ -4,7 +4,7 @@ spring:
       on-profile: prod
 
   datasource:
-    # RDS 주소는 환경변수로 주입
+
     url: jdbc:mysql://${RDS_ENDPOINT}:3306/educoondb?serverTimezone=Asia/Seoul&useUnicode=true&characterEncoding=utf8
     username: ${RDS_USERNAME}
     password: ${RDS_PASSWORD}
@@ -12,9 +12,8 @@ spring:
 
   jpa:
     hibernate:
-      # 초기 배포 시에는 update, 안정화되면 validate로 변경 권장
       ddl-auto: update
-    show-sql: false # 서버 로그 절약을 위해 끔
+    show-sql: false
 
   security:
     oauth2:

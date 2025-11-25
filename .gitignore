@@ -43,6 +43,6 @@ out/
 *.tmp
 
 ### secret files ###
-src/main/resources/application-secret.yml
-src/main/resources/application-oauth.yml
-src/main/resources/application-gemini.yml
+src/main/resources/application-local.yml
+src/main/resources/application-prod.yml
+*.pem
