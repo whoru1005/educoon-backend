@@ -57,6 +57,7 @@ public class StudyRoom {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<StudyRecord> studyRecords = new ArrayList<>();
 
     @OneToMany(mappedBy = "studyRoom", cascade = CascadeType.ALL, orphanRemoval = true)

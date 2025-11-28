@@ -219,13 +219,10 @@ public class StudyRoomService {
             User newOwner = findNextOwner(studyRoom, user);
 
             if (newOwner == null) {
-                // [ CASE 1: 방에 다른 사람이 없음 ]
-                // 방장이 마지막 멤버이므로, 방을 "삭제"하고 종료합니다.
                 studyRoomRepository.delete(studyRoom);
-                return; // 탈퇴(삭제) 성공
+                return;
             } else {
-                // [ CASE 2: 위임할 사람이 있음 ]
-                // 방장직을 위임합니다.
+
                 studyRoom.setOwner(newOwner);
             }
         }

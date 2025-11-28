@@ -40,6 +40,7 @@ public class AiNote {
 
     @Column(nullable = false, updatable = false)
     @CreatedDate
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 }
 

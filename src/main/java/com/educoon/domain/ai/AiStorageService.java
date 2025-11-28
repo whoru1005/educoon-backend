@@ -9,6 +9,7 @@ import com.educoon.domain.user.UserRepository;
 import com.educoon.exception.CustomException;
 import com.educoon.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class AiStorageService {
 
     private final AiQuizRepository aiQuizRepository;
@@ -79,5 +81,16 @@ public class AiStorageService {
                 .orElseThrow(() -> new IllegalArgumentException("노트를 찾을 수 없습니다."));
 
         return new AiNoteDetailResponse(note);
+    }
+
+    @Transactional(readOnly = true)
+    public AiQuizDetailResponse getQuizDetail(Long quizId) {
+        AiQuiz quiz = aiQuizRepository.findById(quizId)
+                .orElseThrow(() -> new IllegalArgumentException("퀴즈를 찾을 수 없습니다."));
+
+
+        log.info("QUIZ ID: " + quiz.getTitle());
+
+        return new AiQuizDetailResponse(quiz);
     }
 }
