@@ -1,6 +1,6 @@
 package com.educoon.controller;
 
-import com.educoon.domain.token.TokenReissueRequest;
+import com.educoon.domain.token.dto.TokenReissueRequest;
 import com.educoon.jwt.JwtTokenInfo;
 import com.educoon.oauth.AuthService;
 import com.educoon.oauth.KakaoLoginRequest;
@@ -30,7 +30,7 @@ public class AuthController {
      */
     @PostMapping("/kakao")
     public ResponseEntity<JwtTokenInfo> kakaoLogin(@Valid @RequestBody KakaoLoginRequest request){
-        log.info("카카오 로그인 요청. Kakao Access Toklen: {}", request.getKakaoAccessToken().substring(0, 10) + "...");
+        log.info("카카오 로그인 요청. Kakao Access Token: {}", request.getKakaoAccessToken().substring(0, 10) + "...");
 
         JwtTokenInfo jwtTokenInfo = authService.loginWithKakao(request.getKakaoAccessToken());
 

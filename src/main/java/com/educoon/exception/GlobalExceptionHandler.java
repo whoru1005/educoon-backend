@@ -25,9 +25,22 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
-        log.warn("MethodArgumentNotValidException occurred: {}", e.getMessage());
-        // TODO: 포트폴리오 - e.getBindingResult()를 파싱하여 더 상세한 에러 메시지를 반환할 수 있습니다.
-        return ErrorResponse.toResponseEntity(ErrorCode.INVALID_INPUT_VALUE);
+        // 첫 번째 에러 필드와 메시지를 가져옴
+        String fieldName = e.getBindingResult().getFieldError().getField();
+        String message = e.getBindingResult().getFieldError().getDefaultMessage();
+
+        log.warn("Validation Failed: [{}] {}", fieldName, message);
+
+        // ErrorResponse에 상세 메시지를 담아서 보냄 (기존 ErrorResponse 구조 활용)
+        // 실제로는 ErrorResponse에 errors 리스트 필드를 추가하는 것이 더 좋음
+        return ResponseEntity
+                .status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus())
+                .body(ErrorResponse.builder()
+                        .status(400)
+                        .error("BAD_REQUEST")
+                        .code("G-002")
+                        .message(fieldName + ": " + message) // 예: "email: 이메일 형식이 올바르지 않습니다"
+                        .build());
     }
 
     /**
@@ -39,4 +52,6 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception occurred: {}", e.getMessage(), e);
         return ErrorResponse.toResponseEntity(ErrorCode.INTERNAL_SERVER_ERROR);
     }
+
+
 }

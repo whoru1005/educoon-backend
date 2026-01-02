@@ -19,4 +19,7 @@ spring:
   jpa:
     open-in-view: false
     database-platform: org.hibernate.dialect.MySQLDialect
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
 

@@ -1,10 +1,10 @@
 package com.educoon.domain.studyStats;
 
-import com.educoon.domain.studyRecord.StudyRecordRepository;
-import com.educoon.domain.studyRoom.StudyRoom;
-import com.educoon.domain.studyRoom.StudyRoomRepository;
-import com.educoon.domain.user.User;
-import com.educoon.domain.user.UserRepository;
+import com.educoon.domain.studyRecord.repository.StudyRecordRepository;
+import com.educoon.domain.studyRoom.entity.StudyRoom;
+import com.educoon.domain.studyRoom.repository.StudyRoomRepository;
+import com.educoon.domain.user.entity.User;
+import com.educoon.domain.user.repository.UserRepository;
 import com.educoon.exception.CustomException;
 import com.educoon.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;

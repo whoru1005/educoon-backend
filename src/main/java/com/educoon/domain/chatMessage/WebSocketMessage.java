@@ -1,5 +1,6 @@
 package com.educoon.domain.chatMessage;
 
+import com.educoon.domain.chatMessage.entity.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -39,7 +39,9 @@ public enum ErrorCode {
     // 학과
     DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D-001", "해당 학과가 존재하지 않습니다"),
     // 명언
-    QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "Q-001", "등록된 명언이 없습니다.");
+    QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "Q-001", "등록된 명언이 없습니다."),
+
+    INVALID_TIME_RANGE(HttpStatus.BAD_REQUEST, "R-001" ,"시작시간이 종료시간 이후입니다");
 
 
 

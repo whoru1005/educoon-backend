@@ -1,66 +1,83 @@
 package com.educoon.config;
 
-import com.educoon.domain.user.UserLocation;
-import com.educoon.domain.user.UserStatus;
+import com.educoon.domain.user.dto.UserLocation;
+import com.educoon.domain.user.dto.UserStatus;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.Duration;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class SessionRoomRegistry {
 
-//    방별 현재 상태 저장소
-//    Key: roomId, Value: Map<UserId, UserStatus>
-    private final Map<Long, Map<Long, UserStatus>> roomStates = new ConcurrentHashMap<>();
+    private final RedisTemplate<String, Object> redisTemplate;
 
-//    세션-위치 매핑(Disconnect 처리용)
-//    Key: sessionId, Value: UserLocation(userId, nickname, roomId)
-    private final Map<String, UserLocation> sessionLocations = new ConcurrentHashMap<>();
+    private static final String ROOM_KEY_PREFIX = "room:";
+    private static final String SESSION_KEY_PREFIX = "session:";
 
     public void userJoin(Long roomId, UserStatus userStatus){
+        String key = ROOM_KEY_PREFIX + roomId;
 
-        Map<Long, UserStatus> userMap = roomStates.computeIfAbsent(
-                roomId, k -> new ConcurrentHashMap<>()
-        );
+        redisTemplate.opsForHash().put(key, userStatus.getUserId().toString(), userStatus);
 
-        userMap.put(userStatus.getUserId(), userStatus);
+        log.debug("Redis 입장 저장: room={}, user={}", roomId, userStatus.getNickname());
     }
 
     public Optional<UserStatus> userLeave(Long roomId, Long userId){
-        Map<Long, UserStatus> userMap = roomStates.get(roomId);
-        if(userMap != null){
-            return Optional.ofNullable(userMap.remove(userId));
+        String key = ROOM_KEY_PREFIX + roomId;
+
+        Object rawData = redisTemplate.opsForHash().get(key, userId.toString());
+
+        if(rawData != null){
+            redisTemplate.opsForHash().delete(key, userId.toString());
         }
-        return Optional.empty();
+
+        return Optional.ofNullable((UserStatus) rawData);
+
     }
 
     public List<UserStatus> getStudyRoomStatus(Long roomId){
-        Map<Long, UserStatus> userMap = roomStates.getOrDefault(roomId, new ConcurrentHashMap<>());
+        String key = ROOM_KEY_PREFIX + roomId;
 
-        return new ArrayList<>(userMap.values());
+        List<Object> rawList = redisTemplate.opsForHash().values(key);
+
+        if(rawList == null)
+            return Collections.emptyList();
+
+        return rawList.stream()
+                .map(obj -> (UserStatus)obj)
+                .collect(Collectors.toList());
     }
 
     public Optional<UserStatus> getUserStatus(Long roomId, Long userId){
-        Map<Long, UserStatus> userMap = roomStates.get(roomId);
+        String key = ROOM_KEY_PREFIX + roomId;
 
-        if(userMap != null){
-            return Optional.ofNullable(userMap.get(userId));
-        }
+        Object rawData = redisTemplate.opsForHash().get(key, userId.toString());
 
-        return Optional.empty();
+        return Optional.ofNullable((UserStatus) rawData);
     }
 
     public void registerSession(String sessionId, UserLocation location){
-        sessionLocations.put(sessionId, location);
+        String key = SESSION_KEY_PREFIX + sessionId;
+
+        redisTemplate.opsForValue().set(key, location, Duration.ofHours(24));
     }
 
     public Optional<UserLocation> unregisterSession(String sessionId){
-        return Optional.ofNullable(sessionLocations.remove(sessionId));
+        String key = SESSION_KEY_PREFIX + sessionId;
+
+        Object rawData = redisTemplate.opsForValue().get(key);
+        if(rawData != null)
+            redisTemplate.delete(key);
+
+        return Optional.ofNullable((UserLocation) rawData);
     }
 
 

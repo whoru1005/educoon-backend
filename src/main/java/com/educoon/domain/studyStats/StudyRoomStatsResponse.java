@@ -1,6 +1,6 @@
 package com.educoon.domain.studyStats;
 
-import com.educoon.domain.studyRoom.StudyRoom;
+import com.educoon.domain.studyRoom.entity.StudyRoom;
 import lombok.Getter;
 
 @Getter

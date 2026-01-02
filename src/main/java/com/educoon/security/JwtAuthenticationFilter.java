@@ -23,6 +23,7 @@ import java.io.IOException;
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String BEARER_PREFIX = "Bearer" ;
 
@@ -32,30 +33,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     //jwt 필터 로직
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // [ 1. 수정/추가 ]
-        // /ws-stomp/** 경로는 JWT 인증 필터를 건너뛰게 합니다.
-        // (이 경로의 인증은 JwtChannelInterceptor가 담당)
+
         if (request.getRequestURI().startsWith("/ws-stomp/")) {
-
-
             filterChain.doFilter(request, response);
-            return; // (필터를 즉시 종료하고 다음으로 넘김)
+            return;
         }
 
-
-        //1. Request 헤더에서 HWT 토큰 추출
-        String jwt = resolveToken(request);
-
-//        2.jwtUtil로 토큰 검증
-//        토큰이 유효하면 SecurityContext에 인증 정보 저장
-        if(StringUtils.hasText(jwt) && jwtUtil.validateToken(jwt)){
-            Authentication authentication = jwtUtil.getAuthentication(jwt);
+        String token = resolveToken(request);
 
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("Security Context에 '{}' 인증 정보를 저장, uri: {}", authentication.getName(), request.getRequestURI());
-        }else {
-            log.debug("유효한 JWT 토큰이 없습니다, uri: {}", request.getRequestURI());
+        if (StringUtils.hasText(token)) {
+            Authentication authentication = jwtUtil.validateAndGetAuthentication(token);
+
+            if (authentication != null) {
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.debug("Security Context 인증 저장: {}", authentication.getName());
+            } else {
+                log.debug("유효한 JWT 토큰이 없습니다.");
+            }
         }
 
         filterChain.doFilter(request, response);

@@ -25,7 +25,6 @@ spring:
             scope: profile_nickname, profile_image, account_email
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
-            # [중요] 배포 시에는 리다이렉트 주소가 서버 IP로 바뀌어야 함
             redirect-uri: "http://${SERVER_IP}:8080/login/oauth2/code/kakao"
         provider:
           kakao:
@@ -38,7 +37,7 @@ google:
   gemini:
     api:
       key: ${GEMINI_API_KEY}
-      url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+      url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
 jwt:
   secret:

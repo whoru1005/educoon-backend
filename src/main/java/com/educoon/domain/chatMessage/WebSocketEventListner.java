@@ -1,7 +1,8 @@
 package com.educoon.domain.chatMessage;
 
 import com.educoon.config.SessionRoomRegistry;
-import com.educoon.domain.user.UserLocation;
+import com.educoon.domain.chatMessage.entity.MessageType;
+import com.educoon.domain.user.dto.UserLocation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
