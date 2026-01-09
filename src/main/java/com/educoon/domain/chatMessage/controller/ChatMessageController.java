@@ -7,8 +7,10 @@ import com.educoon.domain.chatMessage.WebSocketMessage;
 import com.educoon.domain.chatMessage.entity.ChatMessage;
 import com.educoon.domain.studyRoom.entity.StudyRoom;
 import com.educoon.domain.studyRoom.repository.StudyRoomRepository;
+import com.educoon.domain.studyRoom.service.StudyRoomService;
 import com.educoon.domain.user.entity.User;
 import com.educoon.domain.user.repository.UserRepository;
+import com.educoon.domain.user.service.UserService;
 import com.educoon.exception.CustomException;
 import com.educoon.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -39,46 +41,26 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChatMessageController {
 
-    private final UserRepository userRepository;
-    private final StudyRoomRepository studyRoomRepository;
-    private final ChatMessageRepository chatMessageRepository;
+    private final UserService userService;
+    private final StudyRoomService studyRoomService;
+    private final ChatmessageService;
 
     @MessageMapping("/chat/studyrooms/{roomId}/send")
     @SendTo("/topic/studyrooms/{roomId}")
-    @Transactional
     public WebSocketMessage sendMesssage(
             @DestinationVariable Long roomId,
             @Payload ChatMessageRequest request,
             SimpMessageHeaderAccessor headerAccessor
     ){
+
         Authentication authentication = (Authentication) headerAccessor.getUser();
         if(authentication == null){
             throw new CustomException(ErrorCode.USER_NOT_FOUND);
         }
 
         String kakaoId = authentication.getName();
-        User sender = userRepository.findByKakaoId(kakaoId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        StudyRoom studyRoom = studyRoomRepository.findById(roomId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
-
-        ChatMessage newChatMessage = ChatMessage.builder()
-                .studyRoom(studyRoom)
-                .user(sender)
-                .content(request.getContent())
-                .build();
-
-        ChatMessage savedMessage = chatMessageRepository.save(newChatMessage);
-
-        return WebSocketMessage.builder()
-                .type(MessageType.CHAT)
-                .userId(sender.getUserId())
-                .nickname(sender.getNickname())
-                .profileImageUrl(sender.getProfileImageUrl())
-                .content(savedMessage.getContent())
-                .timestamp(savedMessage.getTimestamp())
-                .build();
+        return chatMessageService.sendMessage(roomId, kakaoId, request);
     }
 
     @GetMapping("/api/chat/studyrooms/{roomId}/messages")

@@ -4,6 +4,8 @@ import com.educoon.domain.chatMessage.entity.ChatMessage;
 import com.educoon.domain.chatMessage.repository.ChatMessageRepository;
 import com.educoon.domain.chatMessage.entity.MessageType;
 import com.educoon.domain.chatMessage.WebSocketMessage;
+import com.educoon.exception.CustomException;
+import com.educoon.exception.ErrorCode;
 import com.educoon.infra.ai.GeminiApiService;
 import com.educoon.domain.studyRoom.entity.StudyRoom;
 import com.educoon.domain.studyRoom.repository.StudyRoomRepository;
@@ -16,6 +18,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,13 +47,12 @@ public class AiCommandService {
     private void summarizeChat(Long roomId) {
         // 1. 최근 채팅 50개 조회
         List<ChatMessage> recentMessages = chatMessageRepository.findTop50ByStudyRoomRoomIdOrderByTimestampDesc(roomId);
-        if (recentMessages.isEmpty()) return;
 
-        // Gemini에게 보낼 때는 시간 순서대로(과거->현재) 정렬
-        Collections.reverse(recentMessages);
+        if (recentMessages.isEmpty()) return;
 
         // 2. 프롬프트 생성
         String chatLog = recentMessages.stream()
+                .sorted(Comparator.comparing(ChatMessage::getTimestamp))
                 .map(msg -> msg.getUser().getNickname() + ": " + msg.getContent())
                 .collect(Collectors.joining("\n"));
 
@@ -69,9 +71,9 @@ public class AiCommandService {
     private void saveAndBroadcastAiMessage(Long roomId, String content) {
         // AI 봇 유저 & 스터디룸 조회
         User aiBot = userRepository.findById(AI_BOT_USER_ID)
-                .orElseThrow(() -> new RuntimeException("AI 봇 유저(ID:1)가 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.AI_BOT_USER_NOT_FOUND));
         StudyRoom room = studyRoomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND_FOR_AI));
 
         // 1. DB 저장
         ChatMessage aiMessage = ChatMessage.builder()

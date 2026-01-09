@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class UserService {
     private final UserRepository userRepository;
 
@@ -20,6 +19,7 @@ public class UserService {
      * @param kakaoId
      * @return User
      */
+    @Transactional(readOnly = true)
     public User findByKakaoId(String kakaoId){
         return userRepository.findByKakaoId(kakaoId)
                 .orElseThrow(() -> new CustomException(ErrorCode.KAKAO_USER_INFO_FAILED));
@@ -31,6 +31,7 @@ public class UserService {
      * @param kakaoId SecurityUtils에서 꺼내온 현재 사용자의 Kakao ID
      * @return UserProfileResponse DTO
      */
+    @Transactional(readOnly = true)
     public UserProfileResponse getUserProfile(String kakaoId){
         if(kakaoId == null){
             throw new CustomException(ErrorCode.KAKAO_USER_INFO_FAILED);

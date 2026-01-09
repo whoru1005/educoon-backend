@@ -10,11 +10,17 @@ import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
+    @Query("SELECT cm FROM ChatMessage cm " +
+            "JOIN FETCH cm.user " +
+            "WHERE cm.studyRoom.roomId = :roomId " +
+            "ORDER BY cm.timestamp DESC " +
+            "LIMIT 50")
     List<ChatMessage> findTop50ByStudyRoomRoomIdOrderByTimestampDesc(Long roomId);
 
     @Query(value = "SELECT cm FROM ChatMessage cm " +
             "JOIN FETCH cm.user " +
-            "WHERE cm.studyRoom.roomId = :roomId",
+            "WHERE cm.studyRoom.roomId = :roomId" +
+            " ORDER BY cm.timestamp DESC",
             countQuery = "SELECT count(cm) FROM ChatMessage cm WHERE cm.studyRoom.roomId = :roomId")
     Page<ChatMessage> findAllByStudyRoomRoomIdOrderByTimestampDesc(Long roomId, Pageable pageable);
 }

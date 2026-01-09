@@ -16,6 +16,8 @@ public enum ErrorCode {
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "A-005", "유효하지 않은 Refresh 토큰입니다"),
     NOT_FOUND_REFRESH_TOKEN(HttpStatus.NOT_FOUND, "A-006", "해당 Refresh Token을 찾을 수 없습니다"),
     MISMATCH_TOKEN_USER(HttpStatus.UNAUTHORIZED, "A-007", "토큰 소유자가 불일치합니다"),
+    AI_BOT_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "A-008", "AI 봇 사용자를 찾을 수 없습니다."),
+    ROOM_NOT_FOUND_FOR_AI(HttpStatus.NOT_FOUND, "A-009", "AI 서비스를 위한 방을 찾을 수 없습니다."),
 
     // General (일반)
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "G-001", "서버 내부 오류가 발생했습니다."),
@@ -40,6 +42,10 @@ public enum ErrorCode {
     DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D-001", "해당 학과가 존재하지 않습니다"),
     // 명언
     QUOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "Q-001", "등록된 명언이 없습니다."),
+
+    // AI Storage
+    NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "N-001", "노트를 찾을 수 없습니다."),
+    QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "Q-002", "퀴즈를 찾을 수 없습니다."),
 
     INVALID_TIME_RANGE(HttpStatus.BAD_REQUEST, "R-001" ,"시작시간이 종료시간 이후입니다");
 

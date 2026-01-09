@@ -2,9 +2,12 @@ package com.educoon.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -25,22 +28,29 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
-        // 첫 번째 에러 필드와 메시지를 가져옴
-        String fieldName = e.getBindingResult().getFieldError().getField();
-        String message = e.getBindingResult().getFieldError().getDefaultMessage();
+        BindingResult bindingResult = e.getBindingResult();
 
-        log.warn("Validation Failed: [{}] {}", fieldName, message);
 
-        // ErrorResponse에 상세 메시지를 담아서 보냄 (기존 ErrorResponse 구조 활용)
-        // 실제로는 ErrorResponse에 errors 리스트 필드를 추가하는 것이 더 좋음
-        return ResponseEntity
-                .status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus())
-                .body(ErrorResponse.builder()
-                        .status(400)
-                        .error("BAD_REQUEST")
-                        .code("G-002")
-                        .message(fieldName + ": " + message) // 예: "email: 이메일 형식이 올바르지 않습니다"
-                        .build());
+        if (bindingResult.hasFieldErrors()) {
+            String errorMessage = bindingResult.getFieldErrors().stream()
+                    .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                    .collect(Collectors.joining(", "));
+
+            log.warn("Validation Failed: {}", errorMessage);
+
+            return ResponseEntity
+                    .status(ErrorCode.INVALID_INPUT_VALUE.getHttpStatus())
+                    .body(ErrorResponse.builder()
+                            .status(400)
+                            .error("BAD_REQUEST")
+                            .code("G-002")
+                            .message(errorMessage)
+                            .build());
+        }
+
+        // 필드 에러가 없는 경우 (글로벌 에러)
+        log.warn("Validation Failed: {}", bindingResult.getGlobalError());
+        return ErrorResponse.toResponseEntity(ErrorCode.INVALID_INPUT_VALUE);
     }
 
     /**

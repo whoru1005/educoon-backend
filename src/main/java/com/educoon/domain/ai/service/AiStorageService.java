@@ -82,7 +82,7 @@ public class AiStorageService {
     @Transactional(readOnly = true)
     public AiNoteDetailResponse getNoteDetail(Long noteId) {
         AiNote note = aiNoteRepository.findById(noteId)
-                .orElseThrow(() -> new IllegalArgumentException("노트를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTE_NOT_FOUND));
 
         return new AiNoteDetailResponse(note);
     }
@@ -90,7 +90,7 @@ public class AiStorageService {
     @Transactional(readOnly = true)
     public AiQuizDetailResponse getQuizDetail(Long quizId) {
         AiQuiz quiz = aiQuizRepository.findById(quizId)
-                .orElseThrow(() -> new IllegalArgumentException("퀴즈를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.QUIZ_NOT_FOUND));
 
 
         log.info("QUIZ ID: " + quiz.getTitle());

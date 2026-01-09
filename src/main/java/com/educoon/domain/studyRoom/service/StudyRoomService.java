@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class StudyRoomService {
 
 
@@ -52,6 +51,12 @@ public class StudyRoomService {
         Page<StudyRoom> studyRoomPage = studyRoomRepository.findAll(pageable);
 
         return studyRoomPage.map(StudyRoomSummaryResponse::new);
+    }
+
+    @Transactional(readOnly = true)
+    public StudyRoom getStudyRoomById(Long roomId){
+        return studyRoomRepository.findById(roomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
     }
 
     /**
@@ -124,7 +129,8 @@ public class StudyRoomService {
 
     @Transactional(readOnly = true)
     public List<RoomParticipantResponse> getRoomParticipants(Long roomId){
-        StudyRoom studyRoom = studyRoomRepository.findById(roomId)
+
+        StudyRoom studyRoom = studyRoomRepository.findByIdWithOwner(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
         Long ownerId = studyRoom.getOwner().getUserId();
@@ -272,7 +278,7 @@ public class StudyRoomService {
         User user = userRepository.findByKakaoId(currentUserKakaoId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        StudyRoom studyRoom = studyRoomRepository.findById(roomId)
+        StudyRoom studyRoom = studyRoomRepository.findByIdWithOwner(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROOM_NOT_FOUND));
 
         if (!studyRoom.getOwner().getUserId().equals(user.getUserId())) {

@@ -6,9 +6,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -27,18 +30,24 @@ public class AiController {
     private final AiService aiService;
     private final ObjectMapper objectMapper; // JSON 변환기 (Spring이 자동 주입)
 
-    // Gemini API 응답 대기 시간 설정 (30초)
-    private static final Duration AI_TIMEOUT = Duration.ofSeconds(30);
+    @Value("{ai.timeout.seconds:30}")
+    private int aiTimeoutSeconds;
+
+    private Duration getAiTimeout() {
+        return Duration.ofSeconds(aiTimeoutSeconds);
+    }
 
 
     @PostMapping("/chat")
-    public ResponseEntity<Map<String, String>> chat(@RequestBody ChatRequest request){
-
-        String responseBody = aiService.chat(request.message())
-                .block(AI_TIMEOUT);
-
-        // [수정] 수동 문자열 조립 -> Map 반환 (Spring이 알아서 JSON 변환 및 이스케이프 처리)
-        return ResponseEntity.ok(Map.of("response", responseBody));
+    public Mono<ResponseEntity<Map<String, String>>> chat(@RequestBody ChatRequest request){
+        return aiService.chat(request.message())
+                .map(response -> ResponseEntity.ok(Map.of("response", response)))
+                .timeout(getAiTimeout())
+                .onErrorResume(e ->{
+                    log.error("AI 응답 시간 초과 또는 오류 발생", e);
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(Map.of("error", "AI 응답 시간 초과 또는 오류 발생")));
+                });
     }
 
     /**
@@ -46,32 +55,40 @@ public class AiController {
      * [반환] {"summary": "내용..."}
      */
     @PostMapping("/summarize-text")
-    public ResponseEntity<Map<String, String>> summarizeText(@RequestBody TextRequest textRequest){
-
-        String summary = aiService.summarizeText(textRequest.text())
-                .block(AI_TIMEOUT);
-
-        return ResponseEntity.ok(Map.of("summary", summary));
+    public Mono<ResponseEntity<Map<String, String>>> summarizeText(@RequestBody TextRequest textRequest){
+        return aiService.summarizeText(textRequest.text())
+                .map(summary ->ResponseEntity.ok(Map.of("summary", summary)))
+                .timeout(getAiTimeout())
+                .onErrorResume(e ->{
+                    log.error("AI 요약 시간 초과 또는 오류 발생", e);
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(Map.of("error", "AI 요약 시간 초과 또는 오류 발생")));
+                });
     }
 
 
     @PostMapping("/quiz-text")
-    public ResponseEntity<Object> quizText(
+    public Mono<ResponseEntity<?>> quizText(
             @RequestBody TextRequest request,
             @RequestParam("quizType") QuestionType quizType
     ) {
-        // [수정] 서비스에서 이미 cleanJson 된 문자열이 넘어옴
-        String quizJsonString = aiService.quizText(request.text(), quizType)
-                .block(AI_TIMEOUT);
-
-        try {
-            // 바로 파싱하면 됨
-            Object jsonObject = objectMapper.readValue(quizJsonString, Object.class);
-            return ResponseEntity.ok(jsonObject);
-        } catch (JsonProcessingException e) {
-            log.error("JSON 파싱 실패. 원본: {}", quizJsonString);
-            return ResponseEntity.internalServerError().body(Map.of("error", "AI 응답 파싱 실패"));
-        }
+        return aiService.quizText(request.text(), quizType)
+                .timeout(getAiTimeout())
+                .flatMap(quizJsonString -> {
+                    try {
+                        Object jsonObject = objectMapper.readValue(quizJsonString, Object.class);
+                        return Mono.just(ResponseEntity.ok(jsonObject));
+                    } catch (JsonProcessingException e) {
+                        log.error("JSON 파싱 실패. 원본: {}", quizJsonString);
+                        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(Map.of("error", "AI 응답 파싱 실패")));
+                    }
+                })
+                .onErrorResume(e -> {
+                    log.error("AI quiz error", e);
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(Map.of("error", "퀴즈 생성 중 오류가 발생했습니다.")));
+                });
     }
 
     /**
@@ -79,30 +96,41 @@ public class AiController {
      */
 
     @PostMapping("/upload-pdf")
-    public ResponseEntity<Object> uploadPdf(
+    public Mono<ResponseEntity<Object>> uploadPdf(
             @RequestParam("file") MultipartFile file,
             @RequestParam("action") String action,
             @RequestParam(name = "quizType", required = false) QuestionType quizType
     ) {
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "파일이 비어있습니다."));
+            return Mono.just(ResponseEntity.badRequest()
+                    .body(Map.of("error", "파일이 비어있습니다.")));
         }
 
         try {
-            String responseBody = aiService.processPdf(file.getInputStream(), action, quizType)
-                    .block(AI_TIMEOUT);
-
-            if ("quiz".equals(action)) {
-                // [수정] 여기도 마찬가지로 바로 파싱
-                Object jsonObject = objectMapper.readValue(responseBody, Object.class);
-                return ResponseEntity.ok(jsonObject);
-            } else {
-                return ResponseEntity.ok(Map.of("summary", responseBody));
-            }
-
+            return aiService.processPdf(file.getInputStream(), action, quizType)
+                    .timeout(getAiTimeout())
+                    .flatMap(responseBody -> {
+                        if ("quiz".equals(action)) {
+                            try {
+                                Object jsonObject = objectMapper.readValue(responseBody, Object.class);
+                                return Mono.just(ResponseEntity.ok(jsonObject));
+                            } catch (JsonProcessingException e) {
+                                log.error("JSON 파싱 실패", e);
+                                return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                        .body(Map.of("error", "AI 응답 파싱 실패")));
+                            }
+                        } else {
+                            return Mono.just(ResponseEntity.ok(Map.of("summary", responseBody)));
+                        }
+                    })
+                    .onErrorResume(e -> {
+                        log.error("PDF 처리 오류", e);
+                        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(Map.of("error", "PDF 파일 처리 중 오류가 발생했습니다.")));
+                    });
         } catch (IOException e) {
-            throw new RuntimeException("PDF 파일 처리 중 오류 발생", e);
+            return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "파일 읽기 오류")));
         }
     }
-
 }

@@ -7,6 +7,7 @@ import com.educoon.domain.user.entity.User;
 import com.educoon.domain.user.dto.UserLocation;
 import com.educoon.domain.user.repository.UserRepository;
 import com.educoon.domain.user.dto.UserStatus;
+import com.educoon.domain.user.service.UserService;
 import com.educoon.exception.CustomException;
 import com.educoon.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class StudyRoomSocketController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final SessionRoomRegistry sessionRoomRegistry;
 
     @MessageMapping("/studyrooms/{roomId}/join")
@@ -35,8 +36,7 @@ public class StudyRoomSocketController {
             SimpMessageHeaderAccessor headerAccessor
     ){
         Authentication authentication = (Authentication) headerAccessor.getUser();
-        User user = userRepository.findByKakaoId(authentication.getName())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = userService.findByKakaoId(authentication.getName());
 
         UserStatus newUserStatus = UserStatus.builder()
                 .userId(user.getUserId())
@@ -66,8 +66,7 @@ public class StudyRoomSocketController {
             SimpMessageHeaderAccessor headerAccessor
     ){
         Authentication authentication = (Authentication) headerAccessor.getUser();
-        User user = userRepository.findByKakaoId(authentication.getName())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = userService.findByKakaoId(authentication.getName());
 
         LocalDateTime startTime = LocalDateTime.now();
 
@@ -96,8 +95,7 @@ public class StudyRoomSocketController {
             SimpMessageHeaderAccessor headerAccessor
     ){
         Authentication authentication = (Authentication) headerAccessor.getUser();
-        User user = userRepository.findByKakaoId(authentication.getName())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = userService.findByKakaoId(authentication.getName());
 
         UserStatus userStatus = sessionRoomRegistry.getUserStatus(roomId, user.getUserId())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));

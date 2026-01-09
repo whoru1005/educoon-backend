@@ -4,6 +4,7 @@ import com.educoon.domain.quiz.service.AiQuizService;
 import com.educoon.domain.quiz.dto.QuizSaveRequest;
 import com.educoon.domain.user.entity.User;
 import com.educoon.domain.user.repository.UserRepository;
+import com.educoon.domain.user.service.UserService;
 import com.educoon.exception.CustomException;
 import com.educoon.exception.ErrorCode;
 import com.educoon.security.SecurityUtils;
@@ -22,17 +23,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiQuizController {
 
     private final AiQuizService aiQuizService;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @PostMapping("/save")
     public ResponseEntity<String> saveQuiz(@RequestBody QuizSaveRequest request) {
 
-        // [디버깅 로그] 요청 데이터가 제대로 들어왔는지 서버 콘솔에 출력
-        log.info("===== 퀴즈 저장 요청 데이터 확인 =====");
-        log.info("Title: {}", request.title());
+        log.debug("Title: {}", request.title());
+
         if (request.questions() != null && !request.questions().isEmpty()) {
             request.questions().forEach(q ->
-                    log.info("Question: Type={}, Text={}, Answer={}", q.questionType(), q.questionText(), q.answer())
+                    log.debug("Question: Type={}, Text={}, Answer={}", q.questionType(), q.questionText(), q.answer())
             );
         } else {
             log.warn("Questions List is Empty or Null!");
@@ -42,8 +42,7 @@ public class AiQuizController {
 
         String kakaoId = SecurityUtils.getCurrentUserKakaoId();
 
-        User user = userRepository.findByKakaoId(kakaoId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = userService.findByKakaoId(kakaoId);
 
 
         Long savedQuizId = aiQuizService.saveQuiz(user, request);

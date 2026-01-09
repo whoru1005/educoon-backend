@@ -23,9 +23,6 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
-
-        log.warn("===== jwtUtil is null? : {} =====", jwtUtil == null);
-
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
         if(accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())){
@@ -34,16 +31,15 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             if(authHeader != null && authHeader.startsWith(BEARER_PREFIX)){
                 String token = authHeader.substring(BEARER_PREFIX.length());
                 try {
-                    // 3. JwtUtil을 사용해 토큰 검증
-                    if (jwtUtil.validateToken(token)) {
-                        // 4. 토큰이 유효하면, Authentication 객체를 생성
-                        Authentication authentication = jwtUtil.getAuthentication(token);
-                        // 5. [핵심] 웹소켓 세션에 인증 정보(Authentication)를 등록
+                    Authentication authentication = jwtUtil.validateAndGetAuthentication(token);
+                    if (authentication != null) {
                         accessor.setUser(authentication);
-                        log.info("WebSocket STOMP connected, user: {}", authentication.getName());
+                        log.debug("WebSocket STOMP 연결 인증 성공: {}", authentication.getName());
+                    } else {
+                        log.warn("WebSocket STOMP 연결 인증 실패: 유효하지 않은 토큰");
+                        return null; // (연결 거부)
                     }
                 } catch (Exception e) {
-                    // (토큰이 유효하지 않으면 연결 자체를 맺지 않음)
                     log.warn("WebSocket STOMP connection failed: {}", e.getMessage());
                     return null; // (연결 거부)
                 }

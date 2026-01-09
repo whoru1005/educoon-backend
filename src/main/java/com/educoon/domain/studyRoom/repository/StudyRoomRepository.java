@@ -50,7 +50,12 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
             "LEFT JOIN FETCH s.roomTagMaps rtm " +
             "LEFT JOIN FETCH rtm.tag t " +
             "LEFT JOIN FETCH s.participants p " +
-            "WHERE s.title LIKE %:keyword% OR t.name LIKE %:keyword%")
+            "WHERE s.title LIKE CONCAT('%', :keyword, '%') OR t.name LIKE CONCAT('%', :keyword, '%')")
     List<StudyRoom> findByKeywordWithTags(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("SELECT sr FROM StudyRoom sr " +
+            "LEFT JOIN FETCH sr.owner " +
+            "WHERE sr.roomId = :roomId")
+    Optional<StudyRoom> findByIdWithOwner(@Param("roomId") Long roomId);
 
 }
