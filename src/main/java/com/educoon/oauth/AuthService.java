@@ -15,7 +15,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -50,10 +52,8 @@ public class AuthService {
      */
     public JwtTokenInfo loginWithKakao(String kakaoAccessToken){
 
-//      외부 API 통신(트랜잭션 밖에서 수행)
         KakaoUserInfoResponse userInfo = getKakaoUserInfo(kakaoAccessToken);
 
-//      2. DB 작업 (트랜잭션 시작)
         return processUserLogin(userInfo);
     }
 
@@ -117,19 +117,19 @@ public class AuthService {
      * @param token 카카오 액세스 토큰
      * @return KakaoUserInfoResponse
      */
-    private KakaoUserInfoResponse getKakaoUserInfo(String token){
-        try{
-            return webclient.get()
-                    .uri("")
-                    .header("Authorization", "Bearer " + token)
-                    .retrieve()
-                    .bodyToMono(KakaoUserInfoResponse.class)
-                    .block();
-        } catch (Exception e) {
-            log.error("Kakao Login Failed: {}", e.getMessage() );
-            throw new RuntimeException("카카오 로그인 중 오루가 발생했습니다");
-        }
+    private Mono<KakaoUserInfoResponse> getKakaoUserInfo(String token) {
+        return webclient.get()
+                .uri("")
+                .header("Authorization", "Bearer " + token)
+                .retrieve()
+                .bodyToMono(KakaoUserInfoResponse.class)
+                .timeout(Duration.ofSeconds(5))
+                .onErrorMap(e -> {
+                    log.error("Kakao Login Failed: {}", e.getMessage());
+                    return new RuntimeException("카카오 로그인 중 오류가 발생했습니다");
+                });
     }
+
 
     /**
      * 카카오 정보 기반으로 DB에서 사용자 찾아 반환

@@ -17,7 +17,7 @@ public class SecurityUtils {
     }
 
     /**
-     * 현재 인증 된 상뇽자의 KakaoID 반환
+     * 현재 인증 된 사용자의 KakaoID 반환
      * @return String (Kakao ID)
      */
     public static String getCurrentUserKakaoId(){
@@ -30,6 +30,8 @@ public class SecurityUtils {
 
         if(authentication.getPrincipal() instanceof UserDetails){
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            log.info("현재 사용자 인증 성공");
+            log.debug("현재 인증된 사용자 정보: {}", userDetails.getUsername());
             return userDetails.getUsername();
         }
 
