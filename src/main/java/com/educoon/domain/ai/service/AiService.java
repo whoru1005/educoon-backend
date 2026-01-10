@@ -82,15 +82,15 @@ public class AiService {
         return geminiApiService.generateContent(keywordPrompt)
                 .flatMap(keyword -> {
                     String trimmedKeyword = keyword.trim();
-                    log.info("사용자 질문: {}", message);
-                    log.info("AI 추출 키워드: '{}'", trimmedKeyword);
+                    log.debug("사용자 질문: {}", message);
+                    log.debug("AI 추출 키워드: '{}'", trimmedKeyword);
 
                     // 2. DB 검색 (N+1 해결된 메서드 사용)
                     List<StudyRoom> foundRooms = studyRoomRepository.findByKeywordWithTags(
                             trimmedKeyword, PageRequest.of(0, 5) // 5개 정도만
                     );
 
-                    log.info("검색된 방 개수: {}", foundRooms.size());
+                    log.debug("검색된 방 개수: {}", foundRooms.size());
 
                     String finalPrompt;
 

@@ -28,7 +28,7 @@ public class UserController {
 
         String currentKakaoId = SecurityUtils.getCurrentUserKakaoId();
 
-        log.info("내 정보 조회 요청: kakaoId={}", currentKakaoId);
+        log.debug("내 정보 조회 요청: kakaoId={}", currentKakaoId);
 
         UserProfileResponse profileResponse = userService.getUserProfile(currentKakaoId);
 

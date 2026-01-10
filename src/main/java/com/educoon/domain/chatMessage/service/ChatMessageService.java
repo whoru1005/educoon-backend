@@ -1,5 +1,6 @@
 package com.educoon.domain.chatMessage.service;
 
+import com.educoon.domain.chatMessage.dto.ChatMessageRequest;
 import com.educoon.domain.chatMessage.WebSocketMessage;
 import com.educoon.domain.chatMessage.entity.ChatMessage;
 import com.educoon.domain.chatMessage.entity.MessageType;
@@ -20,7 +21,7 @@ public class ChatMessageService {
     private final StudyRoomService studyRoomService;
     private final ChatMessageRepository chatMessageRepository;
 
-    public WebSocketMessage sendMesssage(Long roomId, WebSocketMessage request, String kakaoId){
+    public WebSocketMessage sendMessage(Long roomId, String kakaoId, ChatMessageRequest request){
         User sender = userService.findByKakaoId(kakaoId);
         StudyRoom studyRoom = studyRoomService.getStudyRoomById(roomId);
 

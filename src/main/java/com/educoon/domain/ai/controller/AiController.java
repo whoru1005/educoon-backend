@@ -96,7 +96,7 @@ public class AiController {
      */
 
     @PostMapping("/upload-pdf")
-    public Mono<ResponseEntity<Object>> uploadPdf(
+    public Mono<ResponseEntity<?>> uploadPdf(
             @RequestParam("file") MultipartFile file,
             @RequestParam("action") String action,
             @RequestParam(name = "quizType", required = false) QuestionType quizType

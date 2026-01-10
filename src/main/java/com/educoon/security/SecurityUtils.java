@@ -30,7 +30,6 @@ public class SecurityUtils {
 
         if(authentication.getPrincipal() instanceof UserDetails){
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            log.info("현재 사용자 인증 성공");
             log.debug("현재 인증된 사용자 정보: {}", userDetails.getUsername());
             return userDetails.getUsername();
         }

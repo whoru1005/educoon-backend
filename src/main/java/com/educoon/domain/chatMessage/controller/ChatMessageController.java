@@ -1,5 +1,6 @@
 package com.educoon.domain.chatMessage.controller;
 
+import com.educoon.domain.chatMessage.service.ChatMessageService;
 import com.educoon.domain.chatMessage.repository.ChatMessageRepository;
 import com.educoon.domain.chatMessage.dto.ChatMessageRequest;
 import com.educoon.domain.chatMessage.entity.MessageType;
@@ -43,7 +44,8 @@ public class ChatMessageController {
 
     private final UserService userService;
     private final StudyRoomService studyRoomService;
-    private final ChatmessageService;
+    private final ChatMessageService chatMessageService;
+    private final ChatMessageRepository chatMessageRepository;
 
     @MessageMapping("/chat/studyrooms/{roomId}/send")
     @SendTo("/topic/studyrooms/{roomId}")

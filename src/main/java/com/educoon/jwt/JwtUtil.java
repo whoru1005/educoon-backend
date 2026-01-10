@@ -5,6 +5,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
+import com.educoon.exception.CustomException;
+import com.educoon.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,20 +26,22 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class JwtUtil { // 사용자님의 클래스명
+public class JwtUtil {
 
-    @Value("${jwt.access-token-expiration}")
-    private long ACCESS_TOKEN_EXPIRE_TIME;
-    @Value("${jwt.refresh-token-expiration}")
-    private long REFRESH_TOKEN_EXPIRE_TIME;
+    private final long accessTokenExpireTime;
+    private final long refreshTokenExpireTime;
 
     private static final String AUTHORITIES_KEY = "auth";
     private static final String BEARER_TYPE = "Bearer";
 
     private final Key key;
 
-    public JwtUtil(@Value("${jwt.secret.key}") String secretKey) {
-        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+    public JwtUtil(@Value("${jwt.secret.key}") String secretKey,
+                   @Value("${jwt.access-token-expiration}") long accessTokenExpireTime,
+                   @Value("${jwt.refresh-token-expiration}") long refreshTokenExpireTime) {
+        this.accessTokenExpireTime = accessTokenExpireTime;
+        this.refreshTokenExpireTime = refreshTokenExpireTime;
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -46,20 +50,22 @@ public class JwtUtil { // 사용자님의 클래스명
      */
     public JwtTokenInfo generateTokenInfo(String kakaoId, Collection<? extends GrantedAuthority> authorities) {
         long now = (new Date()).getTime();
-        Date accessTokenExpiresIn = new Date(now + ACCESS_TOKEN_EXPIRE_TIME);
-        Date refreshTokenExpiresIn = new Date(now + REFRESH_TOKEN_EXPIRE_TIME);
+        Date accessTokenExpiresIn = new Date(now + accessTokenExpireTime);
+        Date refreshTokenExpiresIn = new Date(now + refreshTokenExpireTime);
+
+        String authoritiesString = authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(","));
 
         // 1. Access Token 생성
         String accessToken = Jwts.builder()
                 .setSubject(kakaoId)
-                .claim(AUTHORITIES_KEY, authorities.stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.joining(",")))
+                .claim(AUTHORITIES_KEY, authoritiesString)
                 .setExpiration(accessTokenExpiresIn)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
 
-        // 2. Refresh Token 생성 (별도 정보 없이, 만료 시간만 길게)
+        // 2. Refresh Token 생성
         String refreshToken = Jwts.builder()
                 .setSubject(kakaoId)
                 .setExpiration(refreshTokenExpiresIn)
@@ -75,16 +81,19 @@ public class JwtUtil { // 사용자님의 클래스명
 
     public Authentication validateAndGetAuthentication(String token) {
         try {
-            // 1. 파싱 (여기서 서명 검증, 만료 체크 다 일어남)
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
 
-            // 2. 권한 정보 추출
+            if (claims.get(AUTHORITIES_KEY) == null) {
+                log.warn("권한 정보가 없는 토큰입니다.");
+                return null;
+            }
+
             Collection<? extends GrantedAuthority> authorities =
-                    Arrays.stream(claims.get("auth").toString().split(","))
+                    Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))
                             .map(SimpleGrantedAuthority::new)
                             .collect(Collectors.toList());
 
@@ -92,16 +101,15 @@ public class JwtUtil { // 사용자님의 클래스명
             return new UsernamePasswordAuthenticationToken(principal, token, authorities);
 
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
-            log.warn("잘못된 JWT 서명입니다.");
+            log.warn("잘못된 JWT 서명입니다: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
-            log.warn("만료된 JWT 토큰입니다.");
-            // 필요하다면 여기서 CustomException을 던져 필터에서 잡아서 처리 가능
+            log.warn("만료된 JWT 토큰입니다: {}", e.getMessage());
         } catch (UnsupportedJwtException e) {
-            log.warn("지원되지 않는 JWT 토큰입니다.");
+            log.warn("지원되지 않는 JWT 토큰입니다: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
-            log.warn("JWT 토큰이 잘못되었습니다.");
+            log.warn("JWT 토큰이 잘못되었습니다: {}", e.getMessage());
         }
-        return null; // 유효하지 않으면 null 반환
+        return null;
     }
 
     /**
@@ -109,10 +117,16 @@ public class JwtUtil { // 사용자님의 클래스명
      */
     private Claims parseClaims(String accessToken) {
         try {
-            return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(accessToken).getBody();
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(accessToken)
+                    .getBody();
         } catch (ExpiredJwtException e) {
-            // 만료된 토큰이라도 정보를 꺼내야 할 때가 있으므로, 예외적으로 Claims 반환
             return e.getClaims();
+        } catch (Exception e) {
+            log.error("JWT Claims 파싱 중 오류 발생: {}", e.getMessage());
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 

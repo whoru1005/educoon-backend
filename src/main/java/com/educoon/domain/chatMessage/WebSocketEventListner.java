@@ -35,7 +35,7 @@ public class WebSocketEventListner {
             Long userId = location.getUserId();
             String nickname = location.getNickname();
 
-            log.info("User Disconnected : sessionId={} userId={}, nickname={}, roomId={}", sessionId, userId, nickname, roomId);
+            log.info("User Disconnected : sessionId={} userId={}, roomId={}", sessionId, userId, roomId);
 
             sessionRoomRegistry.userLeave(roomId, userId);
 

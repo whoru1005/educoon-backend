@@ -30,22 +30,22 @@ public class AuthController {
      */
     @PostMapping("/kakao")
     public ResponseEntity<JwtTokenInfo> kakaoLogin(@Valid @RequestBody KakaoLoginRequest request){
-        log.info("카카오 로그인 요청. Kakao Access Token: {}", request.getKakaoAccessToken().substring(0, 10) + "...");
+        log.info("카카오 로그인 요청 수신");
 
         JwtTokenInfo jwtTokenInfo = authService.loginWithKakao(request.getKakaoAccessToken());
 
-        log.info("로그인 성공. JWT: {}", jwtTokenInfo.getAccessToken());
+        log.info("로그인 처리 완료");
 
         return ResponseEntity.ok(jwtTokenInfo);
     }
 
     @PostMapping("/reissue")
     public ResponseEntity<JwtTokenInfo> reissueToken(@Valid @RequestBody TokenReissueRequest request){
-        log.info("토큰 재발급 요청. Refresh Token: {}...", request.getRefreshToken().substring(0, 10));
+        log.info("토큰 재발급 요청 수신");
 
         JwtTokenInfo newJwtTokenInfo = authService.reissueToken(request.getRefreshToken());
 
-        log.info("토큰 재발급 성공. New Access Token: {}", newJwtTokenInfo.getAccessToken());
+        log.info("토큰 재발급 처리 완료");
 
         return ResponseEntity.ok(newJwtTokenInfo);
     }

@@ -32,15 +32,13 @@ public class SessionRoomRegistry {
 
     public Optional<UserStatus> userLeave(Long roomId, Long userId){
         String key = ROOM_KEY_PREFIX + roomId;
-
         Object rawData = redisTemplate.opsForHash().get(key, userId.toString());
 
         if(rawData != null){
             redisTemplate.opsForHash().delete(key, userId.toString());
+            return Optional.ofNullable((UserStatus) rawData);
         }
-
-        return Optional.ofNullable((UserStatus) rawData);
-
+        return Optional.empty();
     }
 
     public List<UserStatus> getStudyRoomStatus(Long roomId){

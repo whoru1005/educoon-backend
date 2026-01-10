@@ -14,10 +14,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -27,8 +24,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final RefreshRepository refreshRepository;
-    private final WebClient webclient;
-    private final String KAKAO_USER_INFO_URI;
+    private final KakaoApiClient kakaoApiClient;
 
 //    기본 권한
     private static final String USER_ROLE = "ROLE_USER";
@@ -36,13 +32,11 @@ public class AuthService {
     public AuthService(UserRepository userRepository,
                        JwtUtil jwtUtil,
                        RefreshRepository refreshRepository,
-                       WebClient.Builder webClientBuilder,
-                       @Value("${spring.security.oauth2.client.provider.kakao.user-info-uri}") String KAKAO_USER_INFO_URI) {
+                       KakaoApiClient kakaoApiClient) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.refreshRepository = refreshRepository;
-        this.webclient = webClientBuilder.baseUrl(KAKAO_USER_INFO_URI).build();
-        this.KAKAO_USER_INFO_URI = KAKAO_USER_INFO_URI;
+        this.kakaoApiClient = kakaoApiClient;
     }
 
     /**
@@ -50,16 +44,23 @@ public class AuthService {
      * @param kakaoAccessToken
      * @return TokenInfo
      */
+    @Transactional
     public JwtTokenInfo loginWithKakao(String kakaoAccessToken){
+        log.info("카카오 로그인 프로세스 시작");
+        try {
+            KakaoUserInfoResponse userInfo = kakaoApiClient.getUserInfo("Bearer " + kakaoAccessToken);
+            log.debug("카카오 사용자 정보 수신 성공: id={}, nickname={}", userInfo.getId(), userInfo.getNickname());
 
-        KakaoUserInfoResponse userInfo = getKakaoUserInfo(kakaoAccessToken);
-
-        return processUserLogin(userInfo);
+            JwtTokenInfo jwtTokenInfo = processUserLogin(userInfo);
+            log.info("카카오 로그인 완료");
+            return jwtTokenInfo;
+        } catch (Exception e) {
+            log.error("카카오 로그인 중 오류 발생: {}", e.getMessage());
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR); // 또는 적절한 에러 코드
+        }
     }
 
-    @Transactional
     protected JwtTokenInfo processUserLogin(KakaoUserInfoResponse userInfo){
-
         User user = findOrCreateUser(userInfo);
 
         JwtTokenInfo jwtTokenInfo = jwtUtil.generateTokenInfo(
@@ -68,6 +69,7 @@ public class AuthService {
         );
 
         saveOrUpdateRefreshToken(user, jwtTokenInfo.getRefreshToken());
+        log.debug("JWT 토큰 생성 및 Refresh Token 저장 완료: kakaoId={}", user.getKakaoId());
 
         return jwtTokenInfo;
     }
@@ -75,13 +77,20 @@ public class AuthService {
     private void saveOrUpdateRefreshToken(User user, String refreshTokenValue){
         refreshRepository.findByUser(user)
                 .ifPresentOrElse(
-                        token -> token.updateToken(refreshTokenValue),
-                        () -> refreshRepository.save(new RefreshToken(user, refreshTokenValue))
+                        token -> {
+                            log.debug("기존 Refresh Token 갱신: userId={}", user.getUserId());
+                            token.updateToken(refreshTokenValue);
+                        },
+                        () -> {
+                            log.debug("새로운 Refresh Token 저장: userId={}", user.getUserId());
+                            refreshRepository.save(new RefreshToken(user, refreshTokenValue));
+                        }
                 );
     }
 
     @Transactional
     public JwtTokenInfo reissueToken(String refreshTokenValue){
+        log.info("토큰 재발급 시작");
         if(!jwtUtil.validateAndGetAuthentication(refreshTokenValue).isAuthenticated()){
             log.warn("유효하지 않은 Refresh Token: {}", refreshTokenValue);
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
@@ -96,7 +105,7 @@ public class AuthService {
                 });
 
         if(!dbRefreshToken.getUser().getKakaoId().equals(kakaoId)){
-            log.error("토큰 소유자가 불일치합니다. DB: {}, Token:{}",
+            log.error("토큰 소유자가 불일치합니다. DB kakaoId: {}, Token kakaoId: {}",
                     dbRefreshToken.getUser().getKakaoId(), kakaoId);
 
             throw new CustomException(ErrorCode.MISMATCH_TOKEN_USER);
@@ -106,29 +115,12 @@ public class AuthService {
         Collection<GrantedAuthority> authorities = Collections.singleton(new SimpleGrantedAuthority(USER_ROLE));
         JwtTokenInfo newJwtTokenInfo = jwtUtil.generateTokenInfo(user.getKakaoId(), authorities);
 
-        log.debug("토큰 재발급 - DB Refresh Token 갱신. userId: {}", user.getUserId());
+        log.info("토큰 재발급 성공 - DB Refresh Token 갱신. userId: {}", user.getUserId());
         dbRefreshToken.updateToken(newJwtTokenInfo.getRefreshToken());
 
         return newJwtTokenInfo;
     }
 
-    /**
-     * WebClient로 카카오 서버와 통신, 사용자 정보 가져옴
-     * @param token 카카오 액세스 토큰
-     * @return KakaoUserInfoResponse
-     */
-    private Mono<KakaoUserInfoResponse> getKakaoUserInfo(String token) {
-        return webclient.get()
-                .uri("")
-                .header("Authorization", "Bearer " + token)
-                .retrieve()
-                .bodyToMono(KakaoUserInfoResponse.class)
-                .timeout(Duration.ofSeconds(5))
-                .onErrorMap(e -> {
-                    log.error("Kakao Login Failed: {}", e.getMessage());
-                    return new RuntimeException("카카오 로그인 중 오류가 발생했습니다");
-                });
-    }
 
 
     /**
@@ -139,7 +131,12 @@ public class AuthService {
      */
     private User findOrCreateUser(KakaoUserInfoResponse userInfo) {
         return userRepository.findByKakaoId(userInfo.getId())
+                .map(user -> {
+                    log.debug("기존 사용자 발견: kakaoId={}", userInfo.getId());
+                    return user;
+                })
                 .orElseGet(() -> {
+                    log.info("신규 사용자 생성 완료");
                     User newUser = User.builder()
                             .kakaoId(userInfo.getId())
                             .nickname(userInfo.getNickname())
