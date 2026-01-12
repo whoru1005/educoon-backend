@@ -1,4 +1,4 @@
-package com.educoon.domain.studyStats; // (패키지는 동일하게 맞춰주세요)
+package com.educoon.domain.studyStats.dto;
 
 import lombok.Getter;
 

@@ -1,8 +1,9 @@
-package com.educoon.domain.studyStats;
+package com.educoon.domain.studyStats.service;
 
 import com.educoon.domain.studyRecord.repository.StudyRecordRepository;
 import com.educoon.domain.studyRoom.entity.StudyRoom;
 import com.educoon.domain.studyRoom.repository.StudyRoomRepository;
+import com.educoon.domain.studyStats.dto.*;
 import com.educoon.domain.user.entity.User;
 import com.educoon.domain.user.repository.UserRepository;
 import com.educoon.exception.CustomException;

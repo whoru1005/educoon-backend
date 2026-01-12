@@ -9,7 +9,7 @@ import com.educoon.exception.ErrorCode;
 import com.educoon.jwt.JwtTokenInfo;
 import com.educoon.jwt.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
@@ -54,9 +54,12 @@ public class AuthService {
             JwtTokenInfo jwtTokenInfo = processUserLogin(userInfo);
             log.info("카카오 로그인 완료");
             return jwtTokenInfo;
+        } catch (feign.FeignException.Unauthorized e) {
+            log.error("카카오 인증 실패 (401): {}", e.getMessage());
+            throw new CustomException(ErrorCode.INVALID_KAKAO_TOKEN);
         } catch (Exception e) {
             log.error("카카오 로그인 중 오류 발생: {}", e.getMessage());
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR); // 또는 적절한 에러 코드
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -91,7 +94,11 @@ public class AuthService {
     @Transactional
     public JwtTokenInfo reissueToken(String refreshTokenValue){
         log.info("토큰 재발급 시작");
-        if(!jwtUtil.validateAndGetAuthentication(refreshTokenValue).isAuthenticated()){
+        
+        // validateAndGetAuthentication에서 유효하지 않으면 CustomException 발생함
+        Authentication authentication = jwtUtil.validateAndGetAuthentication(refreshTokenValue);
+        
+        if(!authentication.isAuthenticated()){
             log.warn("유효하지 않은 Refresh Token: {}", refreshTokenValue);
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }

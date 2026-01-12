@@ -26,6 +26,7 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
             "JOIN rp.user u " +
             "LEFT JOIN FETCH sr.roomTagMaps rtm " +
             "LEFT JOIN FETCH rtm.tag " +
+            "LEFT JOIN FETCH sr.participants " +
             "WHERE u.kakaoId = :kakaoId")
     List<StudyRoom> findMyStudyRoomsByKakaoId(@Param("kakaoId") String kakaoId);
 
@@ -34,6 +35,7 @@ public interface StudyRoomRepository extends JpaRepository<StudyRoom, Long> {
             "JOIN rp.user u " +
             "LEFT JOIN FETCH sr.roomTagMaps rtm " +
             "LEFT JOIN FETCH rtm.tag " +
+            "LEFT JOIN FETCH sr.participants " +
             "WHERE sr.roomId = :roomId")
     Optional<StudyRoom> findRoomDetailsById(@Param("roomId") Long roomId);
 

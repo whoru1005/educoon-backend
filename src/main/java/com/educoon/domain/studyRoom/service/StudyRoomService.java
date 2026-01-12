@@ -18,6 +18,7 @@ import com.educoon.domain.user.repository.UserRepository;
 import com.educoon.exception.CustomException;
 import com.educoon.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StudyRoomService {
 
 
@@ -123,6 +125,7 @@ public class StudyRoomService {
         }
 
         StudyRoom savedRoom = studyRoomRepository.save(newStudyRoom);
+        log.info("스터디룸 생성 완료: roomId={}, title={}, owner={}", savedRoom.getRoomId(), savedRoom.getTitle(), owner.getNickname());
 
         return new StudyRoomDetailResponse(savedRoom);
     }
@@ -178,6 +181,7 @@ public class StudyRoomService {
 
         List<Tag> newTags = tagRepository.findAllById(studyRoomUpdateRequest.getTagIds());
         studyRoom.updateTags(newTags);
+        log.info("스터디룸 정보 수정: roomId={}, updatedBy={}", roomId, user.getNickname());
 
         return new StudyRoomDetailResponse(studyRoom);
     }
@@ -212,6 +216,7 @@ public class StudyRoomService {
                 .build();
 
         roomParticipantRepository.save(newParticipant);
+        log.info("스터디룸 참여: roomId={}, userId={}", roomId, user.getNickname());
     }
 
     public void leaveRoom(Long roomId, String currentUserKakaoId){
@@ -229,10 +234,11 @@ public class StudyRoomService {
             User newOwner = findNextOwner(studyRoom, user);
 
             if (newOwner == null) {
+                log.info("스터디룸 삭제(방장 탈퇴 & 멤버 없음): roomId={}", roomId);
                 studyRoomRepository.delete(studyRoom);
                 return;
             } else {
-
+                log.info("스터디룸 방장 위임: roomId={}, oldOwner={}, newOwner={}", roomId, user.getNickname(), newOwner.getNickname());
                 studyRoom.setOwner(newOwner);
             }
         }

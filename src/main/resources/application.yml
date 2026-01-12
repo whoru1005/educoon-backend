@@ -23,3 +23,17 @@ spring:
       hibernate:
         default_batch_fetch_size: 100
 
+  ai:
+    google:
+      gemini:
+        api-key: ${GEMINI_API_KEY}
+        chat:
+          options:
+            model: gemini-1.5-flash
+
+jwt:
+  secret:
+    key: ${JWT_SECRET_KEY:vmdalstkdqkdbalroqkfwkdbalroqkfwkdbalroqkfwkdbalroqkfwkdbalroqkfwkdbalroqkfwkdbalroqkfwkdbalroqkfwkd}
+  access-token-expiration: 3600000 # 1시간
+  refresh-token-expiration: 1209600000 # 14일
+

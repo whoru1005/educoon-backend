@@ -1,65 +1,90 @@
 package com.educoon.domain.ai.service;
 
+import com.educoon.domain.quiz.dto.QuizQuestionDto;
 import com.educoon.domain.quiz.entity.QuestionType;
-import com.educoon.infra.ai.GeminiApiService;
 import com.educoon.infra.ai.PdfParsingService;
 import com.educoon.domain.studyRoom.entity.StudyRoom;
 import com.educoon.domain.studyRoom.repository.StudyRoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AiService {
 
-    private final GeminiApiService geminiApiService;
+    private final ChatClient chatClient;
     private final PdfParsingService pdfParsingService;
     private final StudyRoomRepository studyRoomRepository;
 
+    public AiService(ChatClient.Builder chatClientBuilder, PdfParsingService pdfParsingService, StudyRoomRepository studyRoomRepository) {
+        this.chatClient = chatClientBuilder.build();
+        this.pdfParsingService = pdfParsingService;
+        this.studyRoomRepository = studyRoomRepository;
+    }
+
     public Mono<String> chat(String message){
         if(message.contains("스터디") || message.contains("추천")){
-
+            log.info("AI 스터디룸 추천 요청: message={}", message);
             return recommendStudyRoom(message);
-
         }else{
-
-            return geminiApiService.generateContent(message);
-
+            log.debug("AI 일반 채팅 요청: message={}", message);
+            return Mono.fromCallable(() -> chatClient.prompt(message).call().content());
         }
     }
 
     public Mono<String> summarizeText(String text){
+        log.info("AI 텍스트 요약 요청 ({} 자)", text.length());
         String prompt = "다음 텍스트를 한국어로 요약해줘:\n\n" + text;
-        return geminiApiService.generateContent(prompt);
+        return Mono.fromCallable(() -> chatClient.prompt(prompt).call().content());
     }
 
-    public Mono<String> quizText(String text, QuestionType quizType) {
-
-        // 1. 퀴즈 타입에 맞는 설명 생성
+    public Mono<List<QuizQuestionDto>> quizText(String text, QuestionType quizType) {
+        log.info("AI 퀴즈 생성 요청: type={}, ({} 자)", quizType, text.length());
         String typeDescription = switch (quizType) {
             case MULTIPLE_CHOICE -> "객관식(MULTIPLE_CHOICE)";
             case TRUE_FALSE      -> "OX(TRUE_FALSE)";
             case SHORT_ANSWER    -> "단답형(SHORT_ANSWER)";
         };
 
-        // 2. 동적 프롬프트 생성
-        String instructions = String.format(
-                "다음 텍스트를 기반으로 \"%s\" 유형의 퀴즈 5개를 생성해줘. questionType 필드에는 반드시 \"%s\"를 넣어줘.",
-                typeDescription, quizType.name()
-        );
+        String instructions = """
+                다음 텍스트를 기반으로 {typeDescription} 유형의 퀴즈 5개를 생성해줘. 
+                questionType 필드에는 반드시 {quizTypeName}을 넣어줘.
+                
+                텍스트:
+                {text}
+                """;
 
-        return geminiApiService.generateJsonContent(text, instructions);
+        BeanOutputConverter<List<QuizQuestionDto>> converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<QuizQuestionDto>>() {});
+
+        return Mono.fromCallable(() -> {
+            PromptTemplate promptTemplate = new PromptTemplate(instructions);
+            Prompt prompt = promptTemplate.create(Map.of(
+                    "typeDescription", typeDescription,
+                    "quizTypeName", quizType.name(),
+                    "text", text
+            ));
+
+            return chatClient.prompt(prompt)
+                    .call()
+                    .entity(converter);
+        });
     }
 
-    public Mono<String> processPdf(InputStream inputStream, String action, QuestionType quizType) {
+    public Mono<?> processPdf(InputStream inputStream, String action, QuestionType quizType) {
+        log.info("AI PDF 처리 시작: action={}, quizType={}", action, quizType);
         String text = pdfParsingService.extractText(inputStream);
 
         if ("summary".equals(action)) {
@@ -68,7 +93,6 @@ public class AiService {
             if (quizType == null) {
                 return Mono.error(new IllegalArgumentException("Quiz type is required for quiz action"));
             }
-
             return quizText(text, quizType);
         } else {
             return Mono.error(new IllegalArgumentException("Invalid action type"));
@@ -76,10 +100,10 @@ public class AiService {
     }
 
     private Mono<String> recommendStudyRoom(String message) {
-        // 1. 키워드 추출 (이 부분은 기존과 동일)
+        // 1. 키워드 추출
         String keywordPrompt = "다음 문장에서 핵심 검색 키워드 단어 1개만 추출해줘. 설명 없이 단어만 대답해. (예: '스프링부트 스터디 추천해줘' -> '스프링부트'): " + message;
 
-        return geminiApiService.generateContent(keywordPrompt)
+        return Mono.fromCallable(() -> chatClient.prompt(keywordPrompt).call().content())
                 .flatMap(keyword -> {
                     String trimmedKeyword = keyword.trim();
                     log.debug("사용자 질문: {}", message);
@@ -140,7 +164,7 @@ public class AiService {
                     }
 
                     // 3. 최종 프롬프트로 AI 호출
-                    return geminiApiService.generateContent(finalPrompt);
+                    return Mono.fromCallable(() -> chatClient.prompt(finalPrompt).call().content());
                 });
     }
 }

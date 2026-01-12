@@ -1,5 +1,7 @@
-package com.educoon.domain.studyStats;
+package com.educoon.domain.studyStats.controller;
 
+import com.educoon.domain.studyStats.dto.*;
+import com.educoon.domain.studyStats.service.StudyStatsService;
 import com.educoon.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;

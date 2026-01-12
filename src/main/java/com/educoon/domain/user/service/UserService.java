@@ -6,11 +6,13 @@ import com.educoon.domain.user.entity.User;
 import com.educoon.exception.CustomException;
 import com.educoon.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
     private final UserRepository userRepository;
 
@@ -22,9 +24,8 @@ public class UserService {
     @Transactional(readOnly = true)
     public User findByKakaoId(String kakaoId){
         return userRepository.findByKakaoId(kakaoId)
-                .orElseThrow(() -> new CustomException(ErrorCode.KAKAO_USER_INFO_FAILED));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
-
 
     /**
      * 현재 로그인된 사용자의 프로필 정보를 DTO로 반환
@@ -39,6 +40,8 @@ public class UserService {
 
         User user = userRepository.findByKakaoId(kakaoId).
                 orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        log.debug("프로필 조회 성공: nickname={}", user.getNickname());
 
         return UserProfileResponse.from(user);
     }

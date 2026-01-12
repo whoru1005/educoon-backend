@@ -89,7 +89,7 @@ public class JwtUtil {
 
             if (claims.get(AUTHORITIES_KEY) == null) {
                 log.warn("권한 정보가 없는 토큰입니다.");
-                return null;
+                throw new CustomException(ErrorCode.INVALID_JWT_TOKEN);
             }
 
             Collection<? extends GrantedAuthority> authorities =
@@ -102,14 +102,17 @@ public class JwtUtil {
 
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
             log.warn("잘못된 JWT 서명입니다: {}", e.getMessage());
+            throw new CustomException(ErrorCode.INVALID_JWT_TOKEN);
         } catch (ExpiredJwtException e) {
             log.warn("만료된 JWT 토큰입니다: {}", e.getMessage());
+            throw new CustomException(ErrorCode.EXPIRED_JWT_TOKEN);
         } catch (UnsupportedJwtException e) {
             log.warn("지원되지 않는 JWT 토큰입니다: {}", e.getMessage());
+            throw new CustomException(ErrorCode.INVALID_JWT_TOKEN);
         } catch (IllegalArgumentException e) {
             log.warn("JWT 토큰이 잘못되었습니다: {}", e.getMessage());
+            throw new CustomException(ErrorCode.INVALID_JWT_TOKEN);
         }
-        return null;
     }
 
     /**

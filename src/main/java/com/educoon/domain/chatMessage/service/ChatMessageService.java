@@ -10,11 +10,13 @@ import com.educoon.domain.studyRoom.service.StudyRoomService;
 import com.educoon.domain.user.entity.User;
 import com.educoon.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ChatMessageService {
 
     private final UserService userService;
@@ -32,6 +34,7 @@ public class ChatMessageService {
                 .build();
 
         ChatMessage savedMessage = chatMessageRepository.save(newChatMessage);
+        log.debug("채팅 메시지 저장: roomId={}, sender={}", roomId, sender.getNickname());
 
         return WebSocketMessage.builder()
                 .type(MessageType.CHAT)

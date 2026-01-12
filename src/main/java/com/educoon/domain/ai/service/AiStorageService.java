@@ -92,7 +92,6 @@ public class AiStorageService {
         AiQuiz quiz = aiQuizRepository.findById(quizId)
                 .orElseThrow(() -> new CustomException(ErrorCode.QUIZ_NOT_FOUND));
 
-
         log.info("QUIZ ID: " + quiz.getTitle());
 
         return new AiQuizDetailResponse(quiz);

@@ -25,7 +25,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String AUTHORIZATION_HEADER = "Authorization";
-    public static final String BEARER_PREFIX = "Bearer" ;
+    public static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtUtil jwtUtil;
 
@@ -43,13 +43,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
         if (StringUtils.hasText(token)) {
-            Authentication authentication = jwtUtil.validateAndGetAuthentication(token);
+            try {
+                Authentication authentication = jwtUtil.validateAndGetAuthentication(token);
 
-            if (authentication != null) {
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("Security Context 인증 저장: {}", authentication.getName());
-            } else {
-                log.debug("유효한 JWT 토큰이 없습니다.");
+                if (authentication != null) {
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("Security Context 인증 저장: {}", authentication.getName());
+                }
+            } catch (Exception e) {
+                log.debug("JWT 인증 실패: {}", e.getMessage());
+                // 여기서 예외를 던지면 SecurityConfig의 authenticationEntryPoint가 처리하거나,
+                // 직접 에러 응답을 작성할 수 있습니다. 
+                // 일단은 Context를 비워두어 이후 필터에서 권한 부족으로 처리되게 합니다.
             }
         }
 
@@ -64,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private String resolveToken(HttpServletRequest request){
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
         if(StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)){
-            return bearerToken.substring(7);
+            return bearerToken.substring(BEARER_PREFIX.length());
         }
         return null;
     }

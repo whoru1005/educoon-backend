@@ -1,4 +1,4 @@
-package com.educoon.domain.studyStats;
+package com.educoon.domain.studyStats.dto;
 
 import lombok.Getter;
 

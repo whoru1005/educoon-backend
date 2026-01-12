@@ -6,7 +6,6 @@ import com.educoon.domain.chatMessage.entity.MessageType;
 import com.educoon.domain.chatMessage.WebSocketMessage;
 import com.educoon.exception.CustomException;
 import com.educoon.exception.ErrorCode;
-import com.educoon.infra.ai.GeminiApiService;
 import com.educoon.domain.studyRoom.entity.StudyRoom;
 import com.educoon.domain.studyRoom.repository.StudyRoomRepository;
 import com.educoon.domain.user.entity.User;
@@ -14,8 +13,10 @@ import com.educoon.domain.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -24,14 +25,21 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AiCommandService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final StudyRoomRepository studyRoomRepository;
     private final UserRepository userRepository;
-    private final GeminiApiService geminiApiService;
+    private final ChatClient chatClient;
     private final SimpMessagingTemplate messagingTemplate;
+
+    public AiCommandService(ChatMessageRepository chatMessageRepository, StudyRoomRepository studyRoomRepository, UserRepository userRepository, ChatClient.Builder chatClientBuilder, SimpMessagingTemplate messagingTemplate) {
+        this.chatMessageRepository = chatMessageRepository;
+        this.studyRoomRepository = studyRoomRepository;
+        this.userRepository = userRepository;
+        this.chatClient = chatClientBuilder.build();
+        this.messagingTemplate = messagingTemplate;
+    }
 
     private static final Long AI_BOT_USER_ID = 1L;
 
@@ -58,8 +66,8 @@ public class AiCommandService {
 
         String prompt = "다음 채팅 내역을 읽고, 3줄 이내로 현재 논의 중인 주제와 결론을 요약해줘.\n\n" + chatLog;
 
-        // 3. Gemini API 호출 (비동기)
-        geminiApiService.generateContent(prompt)
+        // 3. ChatClient 호출
+        Mono.fromCallable(() -> chatClient.prompt(prompt).call().content())
                 .subscribe(summary -> {
                     // 4. 응답이 오면 봇이 말한 것처럼 방송
                     saveAndBroadcastAiMessage(roomId, " AI 요약: \n" + summary);
