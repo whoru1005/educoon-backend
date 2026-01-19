@@ -1,0 +1,57 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: dummy
+            client-secret: dummy
+            redirect-uri: "http://localhost:8080/login/oauth2/code/kakao"
+            authorization-grant-type: authorization_code
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+RDS_ENDPOINT: localhost
+RDS_USERNAME: sa
+RDS_PASSWORD: 
+SERVER_IP: 127.0.0.1
+KAKAO_CLIENT_ID: dummy
+KAKAO_CLIENT_SECRET: dummy
+GEMINI_API_KEY: dummy
+JWT_SECRET_KEY: bXktc2VjcmV0LWtleS13aGljaC1pcy1hdC1sZWFzdC0zMi1ieXRlcy1sb25nLWZvci1obWFjLXNoYTI1Ng==
+
+google:
+  gemini:
+    api:
+      key: dummy
+      url: http://dummy-url.com
+
+ai:
+  bot:
+    user-id: 1
+  timeout:
+    seconds: 30
+
+jwt:
+  secret:
+    key: bXktc2VjcmV0LWtleS13aGljaC1pcy1hdC1sZWFzdC0zMi1ieXRlcy1sb25nLWZvci1obWFjLXNoYTI1Ng==
+  access-token-expiration: 3600000
+  refresh-token-expiration: 1209600000
+
+websocket:
+  allowed-origins:
+    - "*"

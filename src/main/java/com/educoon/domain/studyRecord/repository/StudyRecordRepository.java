@@ -53,23 +53,31 @@ public interface StudyRecordRepository extends JpaRepository<StudyRecord, Long> 
             @Param("end") LocalDateTime end
     );
 
+<<<<<<< Updated upstream
     @Query("SELECT new com.educoon.domain.studyStats.dto.DailyStudyStatsResponse(CAST(s.startTime AS LocalDate), SUM(s.duration)) " + // [ "FUNCTION" -> "CAST" ]
+=======
+    @Query("SELECT new com.educoon.domain.studyStats.DailyStudyStatsResponse(CAST(s.startTime AS localdate), SUM(s.duration)) " + // [ "FUNCTION" -> "CAST" ]
+>>>>>>> Stashed changes
             "FROM StudyRecord s " +
             "WHERE s.user = :user " +
             "AND s.startTime BETWEEN :start AND :end " +
-            "GROUP BY CAST(s.startTime AS LocalDate) " +      // [ "FUNCTION" -> "CAST" ]
-            "ORDER BY CAST(s.startTime AS LocalDate) ASC")
+            "GROUP BY CAST(s.startTime AS localdate) " +      // [ "FUNCTION" -> "CAST" ]
+            "ORDER BY CAST(s.startTime AS localdate) ASC")
     List<DailyStudyStatsResponse> findDailyStudyStatsByUserAndPeriod(
             @Param("user") User user,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
 
+<<<<<<< Updated upstream
     @Query("SELECT new com.educoon.domain.studyStats.dto.WeeklyStudyStatsResponse(WEEK(s.startTime), SUM(s.duration)) " +
+=======
+    @Query("SELECT new com.educoon.domain.studyStats.WeeklyStudyStatsResponse(week(s.startTime), SUM(s.duration)) " +
+>>>>>>> Stashed changes
             "FROM StudyRecord s " +
             "WHERE s.user = :user " +
             "AND s.startTime BETWEEN :start AND :end " +
-            "GROUP BY WEEK(s.startTime) " +
-            "ORDER BY WEEK(s.startTime) ASC") // 주차순 정렬
+            "GROUP BY week(s.startTime) " +
+            "ORDER BY week(s.startTime) ASC") // 주차순 정렬
     List<WeeklyStudyStatsResponse> findWeeklyDurationSumByUserAndPeriod(
             @Param("user") User user,
             @Param("start") LocalDateTime start,
@@ -77,12 +85,16 @@ public interface StudyRecordRepository extends JpaRepository<StudyRecord, Long> 
     );
 
 
+<<<<<<< Updated upstream
     @Query("SELECT new com.educoon.domain.studyStats.dto.MonthlyStudyStatsResponse(MONTH(s.startTime), SUM(s.duration)) " + // [ "FUNCTION('MONTH', ...)" -> "MONTH(...)" ]
+=======
+    @Query("SELECT new com.educoon.domain.studyStats.MonthlyStudyStatsResponse(month(s.startTime), SUM(s.duration)) " + // [ "FUNCTION('MONTH', ...)" -> "MONTH(...)" ]
+>>>>>>> Stashed changes
             "FROM StudyRecord s " +
             "WHERE s.user = :user " +
             "AND s.startTime BETWEEN :start AND :end " +
-            "GROUP BY MONTH(s.startTime) " +      // [ "FUNCTION('MONTH', ...)" -> "MONTH(...)" ]
-            "ORDER BY MONTH(s.startTime) ASC")    // [ "FUNCTION('MONTH', ...
+            "GROUP BY month(s.startTime) " +      // [ "FUNCTION('MONTH', ...)" -> "MONTH(...)" ]
+            "ORDER BY month(s.startTime) ASC")    // [ "FUNCTION('MONTH', ...
     List<MonthlyStudyStatsResponse> findMonthlyDurationSumByUserAndPeriod(
             @Param("user") User user,
             @Param("start") LocalDateTime start,

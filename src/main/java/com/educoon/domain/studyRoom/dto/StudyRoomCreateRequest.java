@@ -1,5 +1,6 @@
 package com.educoon.domain.studyRoom.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -7,6 +8,7 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class StudyRoomCreateRequest {
 
     private String title;

@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**").permitAll()   // Auth API
                         .requestMatchers("/ws-stomp/**").permitAll()   // WebSocket
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger
                         .requestMatchers("/api/**").authenticated() // Other APIs
                         .anyRequest().permitAll()                   // Other (e.g., /)
                 )

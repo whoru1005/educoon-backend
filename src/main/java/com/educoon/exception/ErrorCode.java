@@ -47,7 +47,11 @@ public enum ErrorCode {
     NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "N-001", "노트를 찾을 수 없습니다."),
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "Q-002", "퀴즈를 찾을 수 없습니다."),
 
-    INVALID_TIME_RANGE(HttpStatus.BAD_REQUEST, "R-001" ,"시작시간이 종료시간 이후입니다");
+    INVALID_TIME_RANGE(HttpStatus.BAD_REQUEST, "R-001" ,"시작시간이 종료시간 이후입니다"),
+
+    // AI/Infrastructure
+    PDF_PARSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "I-001", "PDF 파일을 읽는 중 오류가 발생했습니다."),
+    AI_RESPONSE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "I-002", "AI 응답을 처리하는 중 오류가 발생했습니다.");
 
 
 

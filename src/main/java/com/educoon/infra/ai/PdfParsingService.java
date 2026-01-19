@@ -1,5 +1,7 @@
 package com.educoon.infra.ai;
 
+import com.educoon.exception.CustomException;
+import com.educoon.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -31,7 +33,7 @@ public class PdfParsingService {
 
         }catch (IOException e){
             log.error("PDF 파싱 중 오류 발생", e);
-            throw new RuntimeException("PDF 파일을 읽는 중 오류가 발생");
+            throw new CustomException(ErrorCode.PDF_PARSING_ERROR);
         }
     }
 
